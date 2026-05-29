@@ -1,0 +1,123 @@
+<section id="booking" class="service-section is-active">
+  <div class="booking-module">
+    <article class="panel booking-admin-panel">
+      <div class="panel-heading">
+        <h2>Admin: Floor, Room, Table & Pricing</h2>
+        <span>Only table booking module</span>
+      </div>
+
+      <div class="booking-tabs" role="tablist" aria-label="Booking admin tools">
+        <button class="booking-tab is-active" type="button" data-booking-admin-tab="floors">Floors & Rooms</button>
+        <button class="booking-tab" type="button" data-booking-admin-tab="layout">3D Layout</button>
+        <button class="booking-tab" type="button" data-booking-admin-tab="pricing">Pricing</button>
+        <button class="booking-tab" type="button" data-booking-admin-tab="manage">Bookings</button>
+      </div>
+
+      <div class="booking-admin-view is-active" id="bookingAdminFloors">
+        <div class="admin-grid">
+          <form id="floorForm" class="stack-form mini-form">
+            <h3>Add Floor</h3>
+            <input name="floorName" placeholder="Example: 1st Floor" required />
+            <button class="primary-button" type="submit">Add floor</button>
+          </form>
+
+          <form id="roomForm" class="stack-form mini-form">
+            <h3>Add Room Inside Floor</h3>
+            <select name="floorId" required></select>
+            <input name="roomName" placeholder="Example: AC Room" required />
+            <select name="roomType" required>
+              <option value="AC">AC</option>
+              <option value="Non-AC">Non-AC</option>
+              <option value="VIP">VIP</option>
+              <option value="Family">Family</option>
+            </select>
+            <div class="form-row">
+              <input name="price" type="number" min="0" placeholder="Room price" required />
+              <input name="maxPeople" type="number" min="1" placeholder="Max people" required />
+            </div>
+            <div class="form-row">
+              <input name="openTime" type="time" value="18:00" required />
+              <input name="closeTime" type="time" value="22:00" required />
+            </div>
+            <input name="image" type="url" placeholder="Room image URL optional" />
+            <button class="primary-button" type="submit">Add room</button>
+          </form>
+        </div>
+        <div id="floorRoomList" class="floor-room-list"></div>
+      </div>
+
+      <div class="booking-admin-view" id="bookingAdminLayout">
+        <form id="tableForm" class="stack-form mini-form inline-form">
+          <select name="roomId" required></select>
+          <input name="tableName" placeholder="Table name, e.g. T1" required />
+          <select name="capacity" required>
+            <option value="2">2 persons</option>
+            <option value="4">4 persons</option>
+            <option value="6">6 persons</option>
+            <option value="8">8 persons</option>
+          </select>
+          <button class="primary-button" type="submit">Add table + chairs</button>
+        </form>
+        <p class="helper-text">Drag any 3D table to change its position. Chairs are auto-created around each table based on capacity.</p>
+        <div class="layout-toolbar">
+          <select id="adminLayoutFloor"></select>
+          <select id="adminLayoutRoom"></select>
+        </div>
+        <div id="adminLayoutStage" class="table-layout-stage admin-stage"></div>
+      </div>
+
+      <div class="booking-admin-view" id="bookingAdminPricing">
+        <form id="pricingForm" class="stack-form mini-form inline-form">
+          <select name="tableId" required></select>
+          <select name="slot" required></select>
+          <input name="price" type="number" min="0" placeholder="Time price" required />
+          <input name="festivalPrice" type="number" min="0" placeholder="Festival price" />
+          <button class="primary-button" type="submit">Save price</button>
+        </form>
+        <div id="pricingList" class="data-table booking-price-table"></div>
+      </div>
+
+      <div class="booking-admin-view" id="bookingAdminManage">
+        <div class="booking-status-grid">
+          <article><strong id="availableCount">0</strong><span>Available tables</span></article>
+          <article><strong id="bookedCount">0</strong><span>Booked tables</span></article>
+          <article><strong id="pendingCount">0</strong><span>Pending approvals</span></article>
+        </div>
+        <div id="bookingAdminList" class="booking-admin-list"></div>
+      </div>
+    </article>
+
+    <article class="panel booking-customer-panel">
+      <div class="panel-heading">
+        <h2>Customer: Live Table Booking</h2>
+        <span>Green available, red booked</span>
+      </div>
+
+      <div class="customer-controls">
+        <select id="customerFloor"></select>
+        <select id="customerRoom"></select>
+        <input id="customerDate" type="date" />
+        <select id="customerSlot"></select>
+      </div>
+
+      <div id="customerLayoutStage" class="table-layout-stage customer-stage"></div>
+
+      <form id="customerBookingForm" class="stack-form booking-form">
+        <div class="form-row">
+          <input name="name" placeholder="Customer name" required />
+          <input name="mobile" placeholder="Mobile number" required />
+        </div>
+        <div class="form-row">
+          <input name="persons" type="number" min="1" placeholder="Number of persons" required />
+          <input name="selectedTable" readonly placeholder="Select table from layout" required />
+        </div>
+        <textarea name="request" placeholder="Special request"></textarea>
+        <div class="booking-price-summary">
+          <span id="selectedTableInfo">No table selected</span>
+          <strong id="selectedPrice">₹0</strong>
+        </div>
+        <button class="primary-button" type="submit">Book table and send WhatsApp</button>
+      </form>
+    </article>
+  </div>
+</section>

@@ -1,0 +1,30 @@
+<section id="billing" class="service-section is-active">
+  <div class="section-layout">
+    <article class="panel">
+      <div class="panel-heading">
+        <h2>Smart Billing System</h2>
+        <span id="billTotal">₹0</span>
+      </div>
+      <div id="billItems" class="data-table"></div>
+      <form id="billForm" class="stack-form compact-form">
+        <input name="name" placeholder="Item or service" required />
+        <input name="amount" type="number" min="1" placeholder="Amount" required />
+        <button class="primary-button" type="submit">Add to bill</button>
+      </form>
+    </article>
+
+    <article class="panel">
+      <div class="panel-heading">
+        <h2>Live QR File Transfer</h2>
+        <span>Mock transfer</span>
+      </div>
+      <div class="qr-card">
+        <div class="qr-code alt" aria-hidden="true"></div>
+        <p>Upload bill, ID proof, menu PDF, or reports</p>
+        <label class="file-drop" for="fileInput">Choose file</label>
+        <input id="fileInput" type="file" />
+        <div id="fileList" class="simple-list"></div>
+      </div>
+    </article>
+  </div>
+</section>

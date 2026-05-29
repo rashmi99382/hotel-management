@@ -1,0 +1,39 @@
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.summary-card {
+  min-height: 168px;
+  padding: 22px;
+}
+
+.summary-card span {
+  color: var(--brand);
+  font-size: 34px;
+  font-weight: 900;
+}
+
+.summary-card h2 {
+  margin: 8px 0 6px;
+  font-size: 20px;
+}
+
+.summary-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+@media (max-width: 1080px) {
+  .overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .overview-grid {
+    grid-template-columns: 1fr;
+  }
+}

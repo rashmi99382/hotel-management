@@ -1,0 +1,24 @@
+<section id="inventory" class="service-section is-active">
+  <div class="section-layout">
+    <article class="panel">
+      <div class="panel-heading">
+        <h2>Smart Hotel Inventory & Cost Management</h2>
+        <span id="inventoryValue">₹0 total</span>
+      </div>
+      <div id="inventoryList" class="data-table"></div>
+    </article>
+
+    <article class="panel">
+      <div class="panel-heading">
+        <h2>Add Stock Item</h2>
+        <span>Cost tracker</span>
+      </div>
+      <form id="inventoryForm" class="stack-form">
+        <input name="item" placeholder="Item name" required />
+        <input name="qty" type="number" min="1" placeholder="Quantity" required />
+        <input name="cost" type="number" min="1" placeholder="Unit cost" required />
+        <button class="primary-button" type="submit">Add item</button>
+      </form>
+    </article>
+  </div>
+</section>

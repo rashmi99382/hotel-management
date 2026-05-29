@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QR Menu</title>
+    <link rel="stylesheet" href="../../style.css" />
+    <link rel="stylesheet" href="qr-menu.css" />
+    <script defer src="customer.js"></script>
+  </head>
+  <body>
+    <main class="qr-customer-page">
+      <section class="customer-phone scan-phone">
+        <header class="phone-header">
+          <div class="hotel-avatar" id="scanHotelAvatar">QR</div>
+          <div>
+            <strong id="scanHotelName">Loading menu</strong>
+            <span id="scanHotelAddress">Please wait</span>
+          </div>
+        </header>
+
+        <div id="scanTabs" class="phone-tabs">
+          <button class="is-active" type="button" data-scan-page="food">Food Menu</button>
+          <button type="button" data-scan-page="hotel">Hotel Info</button>
+        </div>
+
+        <section id="scanFoodPage" class="customer-page is-active">
+          <div id="scanTools" class="customer-tools">
+            <input id="scanSearch" placeholder="Search food items" />
+            <select id="scanCategory"></select>
+          </div>
+          <div id="scanCategorySections" class="scan-category-sections"></div>
+        </section>
+
+        <section id="scanHotelPage" class="customer-page">
+          <div id="scanHotelInfo" class="hotel-info-card"></div>
+          <div id="scanHotelGallery" class="scan-hotel-gallery"></div>
+          <div id="scanRoomSummary" class="hotel-info-card"></div>
+          <div id="scanRoomList" class="room-normal-view"></div>
+        </section>
+      </section>
+
+      <div id="scanMediaModal" class="qr-modal is-hidden" role="dialog" aria-modal="true">
+        <div class="qr-modal-card">
+          <button class="modal-close" type="button" data-close-scan-modal>&times;</button>
+          <div id="scanMediaBody"></div>
+        </div>
+      </div>
+
+      <div id="scanSmartPopup" class="smart-popup is-hidden" role="dialog" aria-modal="true">
+        <div class="smart-popup-card">
+          <button class="modal-close" type="button" data-close-scan-popup>&times;</button>
+          <span id="scanPopupType">Special Offer</span>
+          <h3 id="scanPopupTitle">Offer title</h3>
+          <div id="scanPopupImage" class="popup-image"></div>
+          <p id="scanPopupOffer">Offer details</p>
+          <a id="scanPopupAction" class="primary-button" href="#" target="_blank" rel="noreferrer">Order now</a>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

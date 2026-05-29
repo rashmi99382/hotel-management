@@ -1,0 +1,263 @@
+<section id="menu" class="service-section is-active">
+  <div class="qr-menu-system" data-theme="light">
+    <div class="qr-topbar">
+      <div>
+        <p class="eyebrow">Smart QR Code Restaurant Menu System</p>
+        <h2>Admin Control + Customer QR Menu</h2>
+      </div>
+      <div class="qr-actions">
+        <a class="secondary-button download-link" id="openCustomerPageButton" href="#" target="_blank" rel="noreferrer">Open customer QR page</a>
+        <button class="secondary-button" type="button" id="themeToggleButton">Dark theme</button>
+      </div>
+    </div>
+
+    <div class="qr-stats" id="analyticsCards"></div>
+
+    <div class="qr-layout">
+      <article class="panel qr-admin-panel">
+        <div class="panel-heading">
+          <h2>Admin Dashboard</h2>
+          <span>Control hotel and restaurant content separately</span>
+        </div>
+
+        <div class="qr-section">
+          <div class="qr-section-title">
+            <h3>1. Hotel Registration & Secure QR</h3>
+            <span id="qrSecurityStatus">Secure QR not generated</span>
+          </div>
+          <form id="hotelForm" class="stack-form qr-form-grid">
+            <input name="hotelName" placeholder="Hotel / Restaurant name" required />
+            <input name="contact" placeholder="Contact / WhatsApp number" required />
+            <input name="address" placeholder="Address" required />
+            <label class="file-control">
+              <span>Upload logo / picture required</span>
+              <input id="hotelLogoFile" type="file" accept="image/*" />
+            </label>
+            <label class="file-control">
+              <span>Upload hotel photo optional</span>
+              <input id="hotelPhotoFile" type="file" accept="image/*" />
+            </label>
+            <label class="file-control">
+              <span>Upload hotel video optional</span>
+              <input id="hotelVideoFile" type="file" accept="video/*" />
+            </label>
+            <input name="googleReview" type="url" placeholder="Google review link" required />
+            <input name="location" type="url" placeholder="Google Maps / location link" required />
+            <input name="instagram" type="url" placeholder="Instagram link" />
+            <input name="facebook" type="url" placeholder="Facebook link" />
+            <div id="hotelMediaPreview" class="hotel-media-preview"></div>
+            <button class="primary-button" type="submit">Register hotel and generate QR</button>
+          </form>
+
+          <div class="qr-card-grid">
+            <div class="qr-preview-card">
+              <canvas id="secureQrCanvas" width="220" height="220" aria-label="Secure QR code preview"></canvas>
+              <div>
+                <strong id="secureQrId">No QR ID yet</strong>
+                <span id="secureQrUrl">Register hotel to generate unique menu link</span>
+              </div>
+              <p id="qrLockMessage" class="qr-lock-message">QR code unlocks only after required hotel registration details are completed.</p>
+              <div class="qr-inline-actions">
+                <button class="secondary-button" type="button" id="copyQrLinkButton">Copy link</button>
+                <button class="secondary-button" type="button" id="regenerateQrButton">Regenerate secure QR</button>
+                <a class="secondary-button download-link" id="downloadQrButton" href="#" download="secure-menu-qr.png">Download QR</a>
+              </div>
+            </div>
+
+            <div class="qr-mode-card">
+              <h3>Enable / Disable Modules</h3>
+              <div class="mode-buttons" role="group" aria-label="Module mode">
+                <button type="button" data-mode="restaurant">Only Restaurant</button>
+                <button type="button" data-mode="hotel">Only Hotel</button>
+                <button type="button" data-mode="both">Hotel + Restaurant</button>
+              </div>
+              <label class="switch-row">
+                <input id="restaurantEnabled" type="checkbox" checked />
+                <span>Restaurant menu section</span>
+              </label>
+              <label class="switch-row">
+                <input id="hotelEnabled" type="checkbox" checked />
+                <span>Hotel room section</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="qr-section">
+          <div class="qr-section-title">
+            <h3>2. Food Categories</h3>
+            <span>Create Veg, Non-Veg, Pizza, Drinks, Desserts and more</span>
+          </div>
+          <form id="categoryForm" class="stack-form qr-inline-form">
+            <input name="category" placeholder="New category name" required />
+            <button class="primary-button" type="submit">Add category</button>
+          </form>
+          <div id="categoryList" class="tag-list"></div>
+        </div>
+
+        <div class="qr-section">
+          <div class="qr-section-title">
+            <h3>3. Food Item Management</h3>
+            <span>Add, update, delete, photos, videos and availability</span>
+          </div>
+          <form id="foodForm" class="stack-form food-form">
+            <input name="name" placeholder="Dish name" required />
+            <select name="category" required></select>
+            <input name="price" type="number" min="1" placeholder="Price" required />
+            <input name="imageUrl" type="url" placeholder="Dish image URL" />
+            <input name="videoUrl" type="url" placeholder="Dish video URL" />
+            <label class="file-control">
+              <span>Upload photo</span>
+              <input id="dishImageFile" type="file" accept="image/*" />
+            </label>
+            <label class="file-control">
+              <span>Upload video max 10MB</span>
+              <input id="dishVideoFile" type="file" accept="video/*" />
+            </label>
+            <textarea name="description" placeholder="Description"></textarea>
+            <label class="switch-row">
+              <input name="available" type="checkbox" checked />
+              <span>Available now</span>
+            </label>
+            <label class="switch-row">
+              <input name="featured" type="checkbox" />
+              <span>Featured highlight</span>
+            </label>
+            <div id="compressPanel" class="compress-panel is-hidden">
+              <strong>Video is larger than 10MB.</strong>
+              <span>Select quality and compress before upload.</span>
+              <select id="compressQuality">
+                <option value="1080p">1080p</option>
+                <option value="720p">720p</option>
+                <option value="480p">480p</option>
+              </select>
+              <button class="secondary-button" type="button" id="compressVideoButton">Compress video</button>
+            </div>
+            <button class="primary-button" type="submit" id="foodSubmitButton">Add food item</button>
+          </form>
+          <div id="adminFoodList" class="admin-food-list"></div>
+        </div>
+
+        <div class="qr-section">
+          <div class="qr-section-title">
+            <h3>4. Smart Popup Features</h3>
+            <span>Up to 10 offers, then Google review popup at 1:30</span>
+          </div>
+          <form id="popupForm" class="stack-form qr-form-grid">
+            <input name="itemName" placeholder="Popup item name" required />
+            <input name="image" type="url" placeholder="Popup image URL" />
+            <input name="offer" placeholder="Offer details" required />
+            <select name="type">
+              <option value="Special Offer">Special Offer</option>
+              <option value="Snacks">Snacks</option>
+              <option value="Water Bottles">Water Bottles</option>
+              <option value="Combo Offer">Combo Offer</option>
+              <option value="Recommended Item">Recommended Item</option>
+              <option value="Today Special">Today's Special</option>
+            </select>
+            <button class="primary-button" type="submit">Add smart popup</button>
+          </form>
+          <div id="popupList" class="popup-list"></div>
+        </div>
+
+        <div class="qr-section">
+          <div class="qr-section-title">
+            <h3>5. Multi-Floor Hotel Management</h3>
+            <span>3D building view and normal room list</span>
+          </div>
+          <form id="floorForm" class="stack-form qr-inline-form">
+            <input name="floor" placeholder="Example: 3rd Floor" required />
+            <button class="primary-button" type="submit">Add floor</button>
+          </form>
+          <form id="roomForm" class="stack-form room-form">
+            <select name="floor" required></select>
+            <select name="position" required>
+              <option value="left">Left-side room</option>
+              <option value="right">Right-side room</option>
+              <option value="hall">Hall room</option>
+            </select>
+            <select name="type" required>
+              <option value="AC">AC</option>
+              <option value="Non-AC">Non-AC</option>
+              <option value="Deluxe">Deluxe</option>
+              <option value="Premium">Premium</option>
+            </select>
+            <input name="name" placeholder="Room name" required />
+            <input name="price" type="number" min="1" placeholder="Room price" required />
+            <input name="image" type="url" placeholder="Room image URL" />
+            <input name="video" type="url" placeholder="Room video URL" />
+            <select name="available">
+              <option value="available">Available</option>
+              <option value="booked">Booked</option>
+              <option value="maintenance">Maintenance</option>
+            </select>
+            <button class="primary-button" type="submit">Add room</button>
+          </form>
+        </div>
+      </article>
+
+      <article class="panel customer-menu-panel">
+        <div class="panel-heading">
+          <h2>Customer QR Experience</h2>
+          <span>What customers see after scanning QR</span>
+        </div>
+
+        <div class="customer-phone">
+          <header class="phone-header">
+            <div class="hotel-avatar" id="hotelAvatar">QR</div>
+            <div>
+              <strong id="customerHotelName">Register your hotel</strong>
+              <span id="customerHotelAddress">Address will appear here</span>
+            </div>
+          </header>
+
+          <div class="phone-tabs">
+            <button class="is-active" type="button" data-customer-page="food">Page 1 Food Menu</button>
+            <button type="button" data-customer-page="hotel">Page 2 Hotel Info</button>
+          </div>
+
+          <section id="foodCustomerPage" class="customer-page is-active">
+            <div class="customer-tools">
+              <input id="menuSearch" placeholder="Search food items" />
+              <select id="categoryFilter"></select>
+            </div>
+            <div id="customerCategoryChips" class="customer-category-chips"></div>
+            <div id="customerFoodList" class="customer-food-list"></div>
+          </section>
+
+          <section id="hotelCustomerPage" class="customer-page">
+            <div class="hotel-info-card">
+              <h3>Hotel / Restaurant Information</h3>
+              <p id="hotelInfoText">Register hotel details to show contact, location and social links.</p>
+              <div id="socialLinks" class="social-links"></div>
+            </div>
+            <div class="room-view-toggle">
+              <button class="is-active" type="button" data-room-view="3d">3D View</button>
+              <button type="button" data-room-view="normal">Normal View</button>
+            </div>
+            <div id="room3dView" class="room-3d-view"></div>
+            <div id="roomNormalView" class="room-normal-view is-hidden"></div>
+          </section>
+        </div>
+      </article>
+    </div>
+
+    <div id="mediaModal" class="qr-modal is-hidden" role="dialog" aria-modal="true">
+      <div class="qr-modal-card">
+        <button class="modal-close" type="button" data-close-modal>&times;</button>
+        <div id="mediaModalBody"></div>
+      </div>
+    </div>
+
+    <div id="smartPopup" class="smart-popup is-hidden" role="dialog" aria-modal="true">
+      <div class="smart-popup-card">
+        <button class="modal-close" type="button" data-close-popup>&times;</button>
+        <span id="popupType">Special Offer</span>
+        <h3 id="popupTitle">Offer title</h3>
+        <div id="popupImage" class="popup-image"></div>
+        <p id="popupOffer">Offer details</p>
+        <a id="popupAction" class="primary-button" href="#" target="_blank" rel="noreferrer">Order now</a>
+      </div>
+    </div>
+  </div>
+</section>

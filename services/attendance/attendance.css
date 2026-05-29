@@ -1,0 +1,38 @@
+.staff-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.staff-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  background: #fbfcfe;
+}
+
+.staff-card h3 {
+  margin: 0 0 6px;
+}
+
+.staff-card p {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.staff-card button {
+  width: 100%;
+}
+
+@media (max-width: 1080px) {
+  .staff-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .staff-grid {
+    grid-template-columns: 1fr;
+  }
+}

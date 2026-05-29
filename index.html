@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Hotel Platform</title>
+    <link rel="stylesheet" href="style.css" />
+    <script defer src="script.js"></script>
+  </head>
+  <body>
+    <main id="publicView" class="public-view">
+      <header class="site-header">
+        <a class="brand" href="#home" aria-label="VistaCraft home">VistaCraft</a>
+
+        <nav class="primary-nav" aria-label="Main navigation">
+          <a href="#design">Design</a>
+          <a href="#product">Product</a>
+          <a href="#plans">Plans</a>
+          <a href="#business">Business</a>
+          <a href="#education">Education</a>
+          <a href="#help">Help</a>
+        </nav>
+
+        <div class="auth-actions">
+          <button class="button secondary" type="button" data-open-login>Sign up</button>
+          <button id="openLoginButton" class="button primary" type="button">Log in</button>
+        </div>
+      </header>
+
+      <section class="hero-section" id="home">
+        <div class="hero-inner">
+          <div class="hero-copy">
+            <h1>Where ideas become art</h1>
+            <p>VistaCraft helps you create polished designs, social posts, presentations, and visual stories in minutes.</p>
+            <button class="button hero-button" type="button" data-open-login>Sign up and start designing</button>
+          </div>
+
+          <div class="video-card" aria-label="Design preview">
+            <div class="video-image">
+              <span class="video-logo">VistaCraft</span>
+              <span class="name-tag tag-one">Asha</span>
+              <span class="name-tag tag-two">Nanu</span>
+              <span class="person person-one"></span>
+              <span class="person person-two"></span>
+              <span class="person person-three"></span>
+              <span class="laptop-preview"></span>
+              <button class="round-control play" type="button" aria-label="Play preview"></button>
+              <button class="round-control sound" type="button" aria-label="Toggle sound"></button>
+            </div>
+          </div>
+        </div>
+
+        <section class="tools-section" id="design">
+          <h2>Explore templates and AI tools</h2>
+          <div class="category-tabs" role="tablist" aria-label="Template categories">
+            <button class="tab is-active" type="button" data-tab="try">Try it now</button>
+            <button class="tab" type="button" data-tab="ai">AI</button>
+            <button class="tab" type="button" data-tab="presentation">Presentation</button>
+            <button class="tab" type="button" data-tab="social">Social Media</button>
+            <button class="tab" type="button" data-tab="print">Print</button>
+            <button class="tab" type="button" data-tab="video">Video</button>
+            <button class="tab" type="button" data-tab="education">Education</button>
+          </div>
+        </section>
+      </section>
+
+      <section class="feature-grid" id="product" aria-label="Featured tools">
+        <article class="feature-card ai-card">
+          <h3>Watch your words turn into production-quality visuals with AI</h3>
+          <button class="button light" type="button" data-open-login>Generate media</button>
+          <form class="prompt-bar">
+            <input value="Surreal backgrounds, ultra realistic, colorful" aria-label="AI prompt" />
+            <button type="button" data-open-login>Create</button>
+          </form>
+        </article>
+
+        <article class="feature-card cutout-card">
+          <h3>Bye-bye background, in a single click</h3>
+          <button class="button light" type="button" data-open-login>Remove background</button>
+          <div class="portrait-preview" aria-hidden="true">
+            <span class="spark spark-one"></span>
+            <span class="spark spark-two"></span>
+            <span class="portrait-face"></span>
+          </div>
+        </article>
+
+        <article class="feature-card presentation-card">
+          <h3>Design, present and inspire with presentations</h3>
+          <button class="button light" type="button" data-open-login>Create a presentation</button>
+          <div class="slides-strip" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </article>
+
+        <article class="feature-card social-card">
+          <h3>Create scroll-stopping social media content for any platform</h3>
+          <button class="button light" type="button" data-open-login>Design for social media</button>
+          <div class="social-icons" aria-hidden="true">
+            <span>◎</span>
+            <span>☘</span>
+            <span>P</span>
+            <span>X</span>
+            <span>f</span>
+            <span>in</span>
+          </div>
+        </article>
+
+        <article class="feature-card video-card-small">
+          <h3>Make your videos look awesome on any screen</h3>
+          <button class="button light" type="button" data-open-login>Edit a video</button>
+          <div class="timeline-mock" aria-hidden="true">
+            <span class="clip"></span>
+            <span class="wave"></span>
+            <span class="photo-tile"></span>
+          </div>
+        </article>
+
+        <article class="feature-card edit-card">
+          <h3>Make easy edits with an AI-powered editor</h3>
+          <button class="button light" type="button" data-open-login>Edit an image</button>
+          <div class="editor-mock" aria-hidden="true">
+            <span class="move-handle"></span>
+            <span class="label-chip">Maya</span>
+            <span class="product-bottle"></span>
+          </div>
+        </article>
+      </section>
+
+      <section class="image-generator" id="education">
+        <div class="generator-copy">
+          <h2>Try Image Generator</h2>
+          <p>Turn pure text into art with Magic Studio and our range of AI art generator tools. Enter a prompt, pick a style, and watch your words transform.</p>
+          <form class="generator-form">
+            <span aria-hidden="true">✧</span>
+            <input value="Moon rising over the mountains" aria-label="Image prompt" />
+            <button class="clear-button" type="button" aria-label="Clear prompt">×</button>
+            <button class="button primary" type="button" data-open-login>Generate</button>
+          </form>
+        </div>
+
+        <div class="generator-art" aria-hidden="true">
+          <div class="moon"></div>
+          <div class="mountain mountain-one"></div>
+          <div class="mountain mountain-two"></div>
+          <div class="style-picker">
+            <button class="style-option active" type="button"><span></span>Dreamy</button>
+            <button class="style-option" type="button"><span></span>Anime</button>
+            <button class="style-option" type="button"><span></span>Watercol...</button>
+            <button class="style-option" type="button"><span></span>Filmic</button>
+            <button class="style-option" type="button"><span>20+</span>More</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="business-section" id="business">
+        <div class="section-heading">
+          <h2>Our Business Features</h2>
+          <p>Enhance the design capabilities of your team or your entire business with flexible plans. Enterprise teams can contact sales for custom support.</p>
+        </div>
+
+        <div class="carousel-wrap">
+          <button class="carousel-arrow prev" type="button" aria-label="Previous business feature">‹</button>
+          <div class="business-carousel" id="businessCarousel">
+            <article class="business-card">
+              <h3>Set up a brand kit to unify your designs</h3>
+              <button class="button light" type="button" data-open-login>Learn more</button>
+              <div class="brand-kit-visual" aria-hidden="true">
+                <span class="brand-dot">co</span>
+                <span class="brand-word">Craft</span>
+                <span class="palette"></span>
+              </div>
+            </article>
+            <article class="business-card">
+              <h3>Empower your team to scale content</h3>
+              <button class="button light" type="button" data-open-login>Learn more</button>
+              <div class="report-visual" aria-hidden="true"></div>
+            </article>
+            <article class="business-card">
+              <h3>Collaborate and create in real time</h3>
+              <button class="button light" type="button" data-open-login>View plans</button>
+              <div class="collab-visual" aria-hidden="true">
+                <span>Sumita</span>
+                <strong>PROJECT OVERVIEW</strong>
+                <em>Anita</em>
+              </div>
+            </article>
+            <article class="business-card">
+              <h3>Protect and secure your data</h3>
+              <button class="button light" type="button" data-open-login>Learn more</button>
+              <div class="security-visual" aria-hidden="true">
+                <p>✓ Use secure sharing</p>
+                <p>✓ Single Sign-On</p>
+                <p>✓ Set team roles</p>
+              </div>
+            </article>
+          </div>
+          <button class="carousel-arrow next" type="button" aria-label="Next business feature">›</button>
+        </div>
+      </section>
+
+      <section class="template-gallery">
+        <div class="section-heading compact">
+          <h2>Templates for every moment</h2>
+          <div class="gallery-actions">
+            <button class="button primary" type="button" data-open-login>Start designing for free</button>
+            <button class="button secondary" type="button" data-open-login>Browse all templates</button>
+          </div>
+        </div>
+
+        <div class="gallery-grid" aria-label="Template previews">
+          <article class="template-tile party">Kitty Party</article>
+          <article class="template-tile festival">Happy Ganesh Chaturthi</article>
+          <article class="template-tile diwali">Shubh Diwali</article>
+          <article class="template-tile ceremony">Annaprashan Ceremony</article>
+          <article class="template-tile wedding">Wedding Invitation</article>
+          <article class="template-tile travel">Travel Poster</article>
+          <article class="template-tile holi wide">Wishing you a very Happy Holi</article>
+          <article class="template-tile water">Save Water</article>
+          <article class="template-tile saree">Half Saree Ceremony</article>
+        </div>
+      </section>
+
+      <section class="plans-section" id="plans">
+        <p>Unlock premium templates, more powerful design tools and AI features with a VistaCraft plan. Educational institutions and non-profits can use premium features for free.</p>
+        <button class="button secondary" type="button" data-open-login>See plans and pricing</button>
+      </section>
+
+      <footer class="site-footer" id="help">
+        <div class="footer-brand">
+          <a class="brand" href="#home">VistaCraft</a>
+          <h2>Download VistaCraft for free</h2>
+          <div class="download-buttons">
+            <button class="button secondary" type="button" data-open-login>Windows</button>
+            <button class="button secondary" type="button" data-open-login>Mac</button>
+          </div>
+        </div>
+        <div>
+          <h3>Product</h3>
+          <a href="#product">Latest launches</a>
+          <a href="#product">Visual Suite</a>
+          <a href="#product">AI studio</a>
+          <a href="#product">Brand management</a>
+          <a href="#product">Social media</a>
+        </div>
+        <div>
+          <h3>Plans</h3>
+          <a href="#plans">Pricing</a>
+          <a href="#plans">Pro</a>
+          <a href="#business">Business</a>
+          <a href="#education">Education</a>
+          <a href="#plans">Nonprofits</a>
+        </div>
+        <div>
+          <h3>Community</h3>
+          <a href="#business">Communities</a>
+          <a href="#business">Creators</a>
+          <a href="#business">Affiliates</a>
+          <a href="#business">Content partners</a>
+          <a href="#business">Developers</a>
+        </div>
+        <div>
+          <h3>Help</h3>
+          <a href="#help">Help Centre</a>
+          <a href="#help">Security</a>
+          <a href="#help">Trust Centre</a>
+          <a href="#help">Accessibility</a>
+          <a href="#help">Sitemap</a>
+        </div>
+      </footer>
+    </main>
+
+    <main id="loginView" class="login-view is-hidden">
+      <section class="login-card">
+        <div>
+          <p class="eyebrow">Prototype access</p>
+          <h1>Smart Hotel Platform</h1>
+          <p class="login-copy">Sign in to manage restaurant, hotel, staff, billing, files, and jobs from one simple control panel.</p>
+        </div>
+
+        <form id="loginForm" class="login-form">
+          <label for="email">Gmail</label>
+          <input id="email" name="email" type="email" autocomplete="username" placeholder="Enter Gmail" required />
+
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter password" required />
+
+          <p id="loginError" class="form-error" role="alert"></p>
+          <button class="primary-button" type="submit">Log in</button>
+          <button id="backToSiteButton" class="secondary-button" type="button">Back to main website</button>
+        </form>
+      </section>
+    </main>
+
+    <main id="appView" class="app-view is-hidden">
+      <aside class="sidebar">
+        <a class="app-brand" href="#overview" data-section-link="overview">
+          <span>SH</span>
+          <strong>Smart Hotel</strong>
+        </a>
+
+        <nav class="side-nav" aria-label="Service navigation">
+          <button class="nav-item is-active" type="button" data-section-link="overview">Overview</button>
+          <button class="nav-item" type="button" data-section-link="booking">Table Booking</button>
+          <button class="nav-item" type="button" data-section-link="menu">QR Menu</button>
+          <button class="nav-item" type="button" data-section-link="inventory">Inventory</button>
+          <button class="nav-item" type="button" data-section-link="attendance">Attendance</button>
+          <button class="nav-item" type="button" data-section-link="billing">Billing & Files</button>
+          <button class="nav-item" type="button" data-section-link="jobs">Jobs</button>
+        </nav>
+      </aside>
+
+      <section class="content-shell">
+        <header class="app-header">
+          <div>
+            <p class="eyebrow">Logged in as</p>
+            <h1 id="pageTitle">Operations Overview</h1>
+          </div>
+          <div class="header-actions">
+            <span id="userEmail" class="user-chip"></span>
+            <button id="logoutButton" class="secondary-button" type="button">Log out</button>
+          </div>
+        </header>
+
+        <div id="serviceHost" class="service-host" aria-live="polite"></div>
+      </section>
+    </main>
+  </body>
+</html>

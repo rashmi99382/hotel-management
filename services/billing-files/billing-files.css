@@ -1,0 +1,51 @@
+.compact-form {
+  grid-template-columns: 1fr 160px auto;
+  margin-top: 14px;
+}
+
+.file-drop {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  border: 1px dashed var(--brand);
+  border-radius: 8px;
+  padding: 0 18px;
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--brand);
+  font-weight: 850;
+  cursor: pointer;
+}
+
+#fileInput {
+  display: none;
+}
+
+.simple-list {
+  display: grid;
+  gap: 10px;
+}
+
+.list-row {
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 13px;
+  background: #fbfcfe;
+}
+
+.list-row strong {
+  font-size: 15px;
+}
+
+.list-row span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+@media (max-width: 720px) {
+  .compact-form {
+    grid-template-columns: 1fr;
+  }
+}
