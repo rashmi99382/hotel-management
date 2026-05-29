@@ -30,7 +30,7 @@
             <input name="contact" placeholder="Contact / WhatsApp number" required />
             <input name="address" placeholder="Address" required />
             <label class="file-control">
-              <span>Upload logo / picture required</span>
+              <span id="hotelLogoRequirement">Upload logo / picture required</span>
               <input id="hotelLogoFile" type="file" accept="image/*" />
             </label>
             <label class="file-control">
@@ -46,7 +46,8 @@
             <input name="instagram" type="url" placeholder="Instagram link" />
             <input name="facebook" type="url" placeholder="Facebook link" />
             <div id="hotelMediaPreview" class="hotel-media-preview"></div>
-            <button class="primary-button" type="submit">Register hotel and generate QR</button>
+            <button class="primary-button" type="submit" id="hotelSubmitButton">Register hotel and generate QR</button>
+            <p class="qr-stability-note" id="qrStabilityNote">After QR generation, future edits keep the same QR link.</p>
           </form>
 
           <div class="qr-card-grid">
@@ -59,7 +60,7 @@
               <p id="qrLockMessage" class="qr-lock-message">QR code unlocks only after required hotel registration details are completed.</p>
               <div class="qr-inline-actions">
                 <button class="secondary-button" type="button" id="copyQrLinkButton">Copy link</button>
-                <button class="secondary-button" type="button" id="regenerateQrButton">Regenerate secure QR</button>
+                <button class="secondary-button" type="button" id="regenerateQrButton">Reset QR ID</button>
                 <a class="secondary-button download-link" id="downloadQrButton" href="#" download="secure-menu-qr.png">Download QR</a>
               </div>
             </div>

@@ -297,11 +297,17 @@ window.smartHotelServices.menu = (() => {
     qs("#secureQrUrl").textContent = registered ? menuUrl() : "Fill all required hotel details, upload logo/picture, then register.";
     qs("#qrSecurityStatus").textContent = registered ? "128-bit unique QR ID active" : "Secure QR not generated";
     qs("#qrLockMessage").textContent = registered
-      ? "This QR opens the customer-only scan page. Admin dashboard is never shown to scanner users."
+      ? "Stable QR active. Updating hotel details, logo, photos, rooms, menu, or offers will keep this same QR link."
       : "QR code unlocks only after required hotel registration details are completed.";
+    qs("#hotelSubmitButton").textContent = registered ? "Save hotel details (QR unchanged)" : "Register hotel and generate QR";
+    qs("#hotelLogoRequirement").textContent = state.hotel.logo ? "Upload new logo / picture optional" : "Upload logo / picture required";
+    qs("#qrStabilityNote").textContent = registered
+      ? "Safe to update: your printed/scanned QR code will keep working with the same link."
+      : "After QR generation, future edits keep the same QR link.";
     qs(".qr-preview-card").classList.toggle("is-locked", !registered);
     qs("#copyQrLinkButton").disabled = !registered;
     qs("#regenerateQrButton").disabled = !registered;
+    qs("#regenerateQrButton").title = "Only use this when you intentionally want old printed QR codes to stop working.";
     qs("#downloadQrButton").setAttribute("aria-disabled", String(!registered));
     qs("#openCustomerPageButton").setAttribute("aria-disabled", String(!registered));
     qs("#openCustomerPageButton").href = registered ? menuUrl() : "#";
@@ -612,8 +618,10 @@ window.smartHotelServices.menu = (() => {
 
     qs("#regenerateQrButton").addEventListener("click", () => {
       if (!state.hotel.registered) return;
+      const confirmed = window.confirm("Reset QR ID? Old printed/shared QR codes will stop working. Use this only if you want a completely new QR code.");
+      if (!confirmed) return;
       state.hotel.id = secureId();
-      state.settings.scanCount += 1;
+      state.settings.scanCount = 0;
       saveState();
       renderAll();
     });
