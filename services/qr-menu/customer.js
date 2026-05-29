@@ -232,36 +232,58 @@ function setScanPage(page) {
   qs("#scanHotelPage").classList.toggle("is-active", targetPage === "hotel");
 }
 
-function linkButton(url, label) {
-  const href = safeUrl(url);
-  return href ? `<a href="${escapeHtml(href)}" target="_blank" rel="noreferrer">${label}</a>` : "";
+function actionTile(href, label, value) {
+  if (!href) return "";
+  return `
+    <a class="scan-hotel-action" href="${escapeHtml(href)}" target="${href.startsWith("tel:") ? "_self" : "_blank"}" rel="noreferrer">
+      <span>${label}</span>
+      <strong>${value}</strong>
+    </a>
+  `;
 }
 
 function renderHotelInfo() {
   const hotel = state.hotel || {};
   const roomTotal = rooms().length;
-  const availableRooms = rooms().filter((room) => room.available === "available").length;
+  const allRooms = rooms();
+  const available = allRooms.filter((room) => room.available === "available");
+  const availableRooms = available.length;
+  const availableLabel = `${availableRooms} ${availableRooms === 1 ? "room" : "rooms"}`;
+  const roomPrices = allRooms.map((room) => Number(room.price)).filter(Boolean);
+  const bestPrice = roomPrices.length ? Math.min(...roomPrices) : 0;
+  const roomTypes = [...new Set(allRooms.map((room) => room.type).filter(Boolean))].slice(0, 3).join(" / ");
+  const phoneHref = hotel.contact ? `tel:${phoneNumber()}` : "";
+  const locationHref = safeUrl(hotel.location);
+  const reviewHref = safeUrl(hotel.googleReview);
+  const instagramHref = safeUrl(hotel.instagram);
+  const facebookHref = safeUrl(hotel.facebook);
   qs("#scanHotelInfo").innerHTML = `
-    <span class="scan-section-kicker">Hotel Information</span>
-    <h3>${escapeHtml(hotel.name || "Hotel Information")}</h3>
-    <p>${escapeHtml(hotel.address || "Address not available")}</p>
-    <div class="scan-info-grid">
-      <div class="scan-info-row"><strong>Contact</strong><span>${escapeHtml(hotel.contact || "Not added")}</span></div>
-      <div class="scan-info-row"><strong>Mode</strong><span>${hotelActive() && restaurantActive() ? "Hotel + Restaurant" : hotelActive() ? "Hotel only" : "Restaurant only"}</span></div>
-      <div class="scan-info-row"><strong>Rooms</strong><span>${hotelActive() ? `${availableRooms} available / ${roomTotal} total` : "Hotel room section disabled"}</span></div>
-    </div>
-    <div class="scan-link-row">
-      ${linkButton(hotel.location, "Location")}
-      ${linkButton(hotel.googleReview, "Google review")}
-      ${linkButton(hotel.instagram, "Instagram")}
-      ${linkButton(hotel.facebook, "Facebook")}
+    <div class="scan-hotel-overview">
+      <div>
+        <span class="scan-section-kicker">Hotel Information</span>
+        <h3>${escapeHtml(hotel.name || "Hotel Information")}</h3>
+        <p>${escapeHtml(hotel.address || "Address not available")}</p>
+      </div>
+      <div class="scan-hotel-metrics">
+        <span><strong>${availableRooms}</strong>Available rooms</span>
+        <span><strong>${roomTotal}</strong>Total rooms</span>
+        ${bestPrice ? `<span><strong>₹${bestPrice}</strong>Starting price</span>` : ""}
+        ${roomTypes ? `<span><strong>${escapeHtml(roomTypes)}</strong>Room types</span>` : ""}
+      </div>
+      <div class="scan-hotel-actions">
+        ${actionTile(locationHref, "Find us", "Location")}
+        ${actionTile(phoneHref, "Talk to us", hotel.contact || "Call")}
+        ${actionTile(reviewHref, "Experience", "Review")}
+        ${actionTile(instagramHref, "Social", "Instagram")}
+        ${actionTile(facebookHref, "Social", "Facebook")}
+      </div>
     </div>
   `;
 
   qs("#scanHotelGallery").innerHTML = [
-    hotel.logo ? `<figure><img src="${escapeHtml(hotel.logo)}" alt="${escapeHtml(hotel.name || "Hotel")} logo" /><figcaption>Logo / picture</figcaption></figure>` : "",
-    hotel.photo ? `<figure class="wide"><img src="${escapeHtml(hotel.photo)}" alt="${escapeHtml(hotel.name || "Hotel")} photo" /><figcaption>Hotel photo</figcaption></figure>` : "",
-    hotel.video ? `<figure class="wide"><video src="${escapeHtml(hotel.video)}" controls></video><figcaption>Hotel video</figcaption></figure>` : ""
+    hotel.photo ? `<figure class="feature"><img src="${escapeHtml(hotel.photo)}" alt="${escapeHtml(hotel.name || "Hotel")} photo" /><figcaption>Hotel photo</figcaption></figure>` : "",
+    hotel.video ? `<figure class="feature"><video src="${escapeHtml(hotel.video)}" controls></video><figcaption>Hotel video</figcaption></figure>` : "",
+    hotel.logo ? `<figure><img src="${escapeHtml(hotel.logo)}" alt="${escapeHtml(hotel.name || "Hotel")} logo" /><figcaption>Logo / picture</figcaption></figure>` : ""
   ].filter(Boolean).join("");
 
   if (!hotelActive()) {
@@ -271,9 +293,14 @@ function renderHotelInfo() {
   }
 
   qs("#scanRoomSummary").innerHTML = `
-    <span class="scan-section-kicker">Stay with us</span>
-    <h3>Hotel Rooms</h3>
-    <p>${availableRooms} rooms available now. Tap any room to view photo, video, price, floor and availability.</p>
+    <div class="scan-room-summary">
+      <div>
+        <span class="scan-section-kicker">Stay with us</span>
+        <h3>Rooms & availability</h3>
+        <p>${availableLabel} available now. Choose a room to view photo, video, floor, type and price.</p>
+      </div>
+      ${bestPrice ? `<strong>From ₹${bestPrice}</strong>` : ""}
+    </div>
   `;
   qs("#scanRoomList").innerHTML = rooms().map(renderRoomCard).join("") || `
     <article class="hotel-info-card">
@@ -284,17 +311,24 @@ function renderHotelInfo() {
 }
 
 function renderRoomCard(room) {
+  const available = room.available === "available";
   return `
     <article class="room-normal-card scan-room-card ${escapeHtml(room.available)}">
       <button class="room-thumb" type="button" data-open-scan-room="${escapeHtml(room.id)}">
         ${room.image ? `<img src="${escapeHtml(room.image)}" alt="${escapeHtml(room.name)}" />` : escapeHtml(room.name)}
       </button>
-      <div>
+      <div class="scan-room-content">
+        <div class="scan-room-topline">
+          <span>${escapeHtml(room.floor)} | ${escapeHtml(room.type)}</span>
+          <strong>₹${room.price}</strong>
+        </div>
         <h4>${escapeHtml(room.name)}</h4>
-        <p>${escapeHtml(room.floor)} | ${escapeHtml(room.position)} | ${escapeHtml(room.type)}</p>
-        <span>₹${room.price} | ${escapeHtml(room.available)}</span>
+        <p>${escapeHtml(room.position)} room</p>
+        <div class="scan-room-footer">
+          <span class="scan-room-status">${available ? "Available now" : escapeHtml(room.available)}</span>
+          <button class="secondary-button" type="button" data-open-scan-room="${escapeHtml(room.id)}">View room</button>
+        </div>
       </div>
-      <button class="secondary-button" type="button" data-open-scan-room="${escapeHtml(room.id)}">View</button>
     </article>
   `;
 }
