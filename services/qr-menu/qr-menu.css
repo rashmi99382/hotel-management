@@ -785,19 +785,19 @@
   margin: 8px 0;
 }
 
-#popupType {
+#scanPopupType {
   color: var(--brand);
   font-size: 12px;
   font-weight: 900;
   text-transform: uppercase;
 }
 
-#popupTitle {
+#scanPopupTitle {
   margin: 4px 0 0;
   font-size: 18px;
 }
 
-#popupOffer {
+#scanPopupOffer {
   margin: 8px 0 10px;
   color: var(--muted);
   font-size: 13px;

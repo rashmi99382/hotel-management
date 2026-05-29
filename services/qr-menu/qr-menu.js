@@ -16,9 +16,6 @@ window.smartHotelServices.menu = (() => {
   let uploadedHotelVideo = "";
   let pendingVideoFile = null;
   let roomView = "3d";
-  let popupTimer = null;
-  let popupElapsed = 0;
-  let popupIndex = 0;
   let qrDrawVersion = 0;
 
   function secureId() {
@@ -512,47 +509,6 @@ window.smartHotelServices.menu = (() => {
     qs("#mediaModal").classList.remove("is-hidden");
   }
 
-  function showSmartPopup(forceReview = false) {
-    if (forceReview) {
-      qs("#popupType").textContent = "Google Review";
-      qs("#popupTitle").textContent = "Rate your experience";
-      qs("#popupImage").innerHTML = "";
-      qs("#popupOffer").textContent = "One click opens Google Maps review page.";
-      qs("#popupAction").textContent = "Review on Google";
-      qs("#popupAction").href = state.hotel.googleReview || "https://www.google.com/search?q=review";
-      qs("#smartPopup").classList.remove("is-hidden");
-      return;
-    }
-    if (!restaurantActive() || !state.popups.length) return;
-    const popup = state.popups[popupIndex % state.popups.length];
-    popupIndex += 1;
-    qs("#popupType").textContent = popup.type;
-    qs("#popupTitle").textContent = popup.itemName;
-    qs("#popupImage").innerHTML = popup.image ? `<img src="${popup.image}" alt="${popup.itemName}" />` : popup.itemName;
-    qs("#popupOffer").textContent = popup.offer;
-    qs("#popupAction").textContent = "Order on WhatsApp";
-    qs("#popupAction").href = `https://wa.me/${phoneNumber()}?text=${encodeURIComponent(`Offer order\n${popup.itemName}\n${popup.offer}`)}`;
-    qs("#smartPopup").classList.remove("is-hidden");
-  }
-
-  function startPopupTimer() {
-    clearInterval(popupTimer);
-    popupElapsed = 0;
-    popupTimer = setInterval(() => {
-      if (!root || !document.body.contains(root)) {
-        clearInterval(popupTimer);
-        return;
-      }
-      popupElapsed += 30;
-      if (popupElapsed >= 90) {
-        showSmartPopup(true);
-        popupElapsed = 0;
-      } else {
-        showSmartPopup();
-      }
-    }, 30000);
-  }
-
   function fileToDataUrl(file) {
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -874,8 +830,6 @@ window.smartHotelServices.menu = (() => {
       }
 
       if (event.target.closest("[data-close-modal]")) qs("#mediaModal").classList.add("is-hidden");
-      if (event.target.closest("[data-close-popup]")) qs("#smartPopup").classList.add("is-hidden");
-
       const orderButton = event.target.closest("[data-order-food]");
       if (orderButton) {
         state.settings.orderCount += 1;
@@ -887,7 +841,6 @@ window.smartHotelServices.menu = (() => {
 
   function init(mount) {
     root = mount;
-    clearInterval(popupTimer);
     renderAll();
     bindEvents();
   }
