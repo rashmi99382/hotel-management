@@ -1,38 +1,488 @@
-.staff-grid {
+.attendance-system {
+  --att-ink: #101827;
+  --att-muted: #637083;
+  --att-line: #dbe4f0;
+  --att-soft: #f6f8fb;
+  --att-blue: #2563eb;
+  --att-green: #129557;
+  --att-orange: #f97316;
+  --att-red: #dc2626;
+  display: grid;
+  gap: 16px;
+  color: var(--att-ink);
+}
+
+.attendance-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  overflow: hidden;
+  border-radius: 8px;
+  padding: 22px;
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, .92), rgba(18, 149, 87, .88)),
+    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, .34), transparent 28%);
+  color: #ffffff;
+  box-shadow: 0 22px 58px rgba(37, 99, 235, .18);
+}
+
+.attendance-hero h2 {
+  margin: 4px 0 6px;
+  font-size: clamp(30px, 5vw, 52px);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.attendance-hero span {
+  display: block;
+  color: rgba(255, 255, 255, .86);
+  font-weight: 760;
+}
+
+.attendance-hero .eyebrow {
+  color: rgba(255, 255, 255, .76);
+}
+
+.attendance-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.attendance-hero-actions .secondary-button {
+  border-color: rgba(255, 255, 255, .34);
+  background: rgba(255, 255, 255, .14);
+  color: #ffffff;
+}
+
+.attendance-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.att-stat {
+  border: 1px solid var(--att-line);
+  border-radius: 8px;
+  padding: 14px;
+  background: #ffffff;
+  box-shadow: 0 12px 30px rgba(16, 24, 39, .06);
+}
+
+.att-stat strong {
+  display: block;
+  color: var(--att-blue);
+  font-size: 28px;
+  line-height: 1;
+}
+
+.att-stat span {
+  display: block;
+  margin-top: 6px;
+  color: var(--att-muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.attendance-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  border: 1px solid var(--att-line);
+  border-radius: 8px;
+  padding: 8px;
+  background: #ffffff;
+}
+
+.attendance-tabs button {
+  min-height: 46px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--att-muted);
+  font-weight: 950;
+}
+
+.attendance-tabs button.is-active {
+  background: var(--att-ink);
+  color: #ffffff;
+}
+
+.attendance-view {
+  display: none;
+}
+
+.attendance-view.is-active {
+  display: grid;
+  gap: 16px;
+}
+
+.attendance-layout,
+.employee-login-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.att-card {
+  border: 1px solid var(--att-line);
+  border-radius: 8px;
+  padding: 16px;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(16, 24, 39, .06);
+}
+
+.att-card-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.att-card-heading h3 {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+
+.att-card-heading span,
+.att-message {
+  color: var(--att-muted);
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 760;
+}
+
+.att-form,
+.att-inline-filter {
+  display: grid;
+  gap: 10px;
+}
+
+.att-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.att-form input,
+.att-form select,
+.att-inline-filter input,
+.att-inline-filter select {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--att-line);
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #ffffff;
+  color: var(--att-ink);
+  font: inherit;
+  font-weight: 760;
+}
+
+.att-form button {
+  grid-column: 1 / -1;
+}
+
+.login-form-grid {
+  grid-template-columns: 1fr;
+}
+
+.att-inline-filter {
+  grid-template-columns: minmax(180px, 1fr) 150px;
+}
+
+.employee-directory {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
-.staff-card {
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 16px;
-  background: #fbfcfe;
+.sub-admin-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
 }
 
-.staff-card h3 {
-  margin: 0 0 6px;
+.sub-admin-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--att-line);
+  border-radius: 8px;
+  padding: 12px;
+  background: linear-gradient(135deg, #f8fbff, #ffffff);
 }
 
-.staff-card p {
-  margin: 0 0 14px;
-  color: var(--muted);
+.sub-admin-card h4,
+.sub-admin-card p {
+  margin: 0;
+}
+
+.sub-admin-card p {
+  color: var(--att-muted);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.employee-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--att-line);
+  border-radius: 8px;
+  padding: 12px;
+  background:
+    linear-gradient(180deg, #ffffff, #f8fbff);
+}
+
+.employee-card-header {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.employee-avatar {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--att-blue), #14b8a6);
+  color: #ffffff;
+  font-weight: 950;
+}
+
+.employee-card h4,
+.employee-card p {
+  margin: 0;
+}
+
+.employee-card p,
+.employee-meta {
+  color: var(--att-muted);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.employee-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.employee-meta span,
+.status-pill {
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: #eef4ff;
+  color: var(--att-blue);
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.status-pill.present {
+  background: rgba(18, 149, 87, .12);
+  color: var(--att-green);
+}
+
+.status-pill.absent {
+  background: rgba(220, 38, 38, .1);
+  color: var(--att-red);
+}
+
+.status-pill.pending {
+  background: rgba(249, 115, 22, .14);
+  color: #b45309;
+}
+
+.employee-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.tiny-button {
+  min-height: 34px;
+  border: 1px solid var(--att-line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--att-ink);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.tiny-button.danger {
+  color: var(--att-red);
+}
+
+.personal-qr {
+  display: grid;
+  grid-template-columns: 122px 1fr;
+  gap: 14px;
+  align-items: center;
+  border: 1px dashed #b7c6d8;
+  border-radius: 8px;
+  padding: 12px;
+  background: #f8fbff;
+}
+
+.qr-art {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 3px;
+  width: 110px;
+  height: 110px;
+  border: 8px solid #ffffff;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 12px 24px rgba(16, 24, 39, .12);
+}
+
+.qr-art span {
+  border-radius: 2px;
+  background: #0f172a;
+}
+
+.qr-art span.light {
+  background: #e7edf7;
+}
+
+.employee-portal {
+  min-height: 260px;
+}
+
+.employee-portal-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 190px;
+  gap: 18px;
+  align-items: center;
+}
+
+.employee-portal-card h3 {
+  margin: 0 0 8px;
+  font-size: 30px;
+}
+
+.portal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.empty-portal {
+  display: grid;
+  place-items: center;
+  min-height: 220px;
+  text-align: center;
+}
+
+.empty-portal h3,
+.empty-portal p {
+  margin: 0;
+}
+
+.review-list,
+.activity-list,
+.attendance-report,
+.review-completion {
+  display: grid;
+  gap: 10px;
+}
+
+.review-item,
+.activity-item,
+.report-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--att-line);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--att-soft);
+}
+
+.review-item h4,
+.activity-item h4,
+.report-row h4 {
+  margin: 0 0 4px;
+}
+
+.review-item p,
+.activity-item p,
+.report-row p {
+  margin: 0;
+  color: var(--att-muted);
   font-size: 13px;
 }
 
-.staff-card button {
-  width: 100%;
+.review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
-@media (max-width: 1080px) {
-  .staff-grid {
+.completion-ring {
+  display: grid;
+  place-items: center;
+  width: 190px;
+  height: 190px;
+  margin: 8px auto;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at center, #ffffff 0 56%, transparent 57%),
+    conic-gradient(var(--att-green) var(--progress), #e6edf6 0);
+  box-shadow: inset 0 0 0 1px var(--att-line), 0 16px 38px rgba(16, 24, 39, .08);
+}
+
+.completion-ring strong {
+  font-size: 38px;
+}
+
+.completion-note {
+  text-align: center;
+  color: var(--att-muted);
+  font-weight: 760;
+}
+
+@media (max-width: 1180px) {
+  .attendance-stats,
+  .employee-directory {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 720px) {
-  .staff-grid {
+@media (max-width: 780px) {
+  .attendance-hero,
+  .att-card-heading,
+  .review-item,
+  .activity-item,
+  .report-row,
+  .sub-admin-card,
+  .employee-portal-card {
+    grid-template-columns: 1fr;
+  }
+
+  .attendance-hero,
+  .att-card-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .attendance-stats,
+  .attendance-tabs,
+  .attendance-layout,
+  .employee-login-grid,
+  .att-form,
+  .att-inline-filter,
+  .employee-directory,
+  .personal-qr,
+  .employee-actions {
     grid-template-columns: 1fr;
   }
 }

@@ -1,9 +1,176 @@
 <section id="attendance" class="service-section is-active">
-  <article class="panel">
-    <div class="panel-heading">
-      <h2>Smart Attendance System</h2>
-      <span>Today</span>
+  <div class="attendance-system">
+    <div class="attendance-hero">
+      <div>
+        <p class="eyebrow">Smart Attendance System</p>
+        <h2>Employee QR Attendance Control</h2>
+        <span>Admin, sub-admin, employee login, personal QR, review and reports.</span>
+      </div>
+      <div class="attendance-hero-actions">
+        <button class="secondary-button" type="button" id="seedAttendanceButton">Load sample team</button>
+        <button class="secondary-button" type="button" id="exportAttendanceButton">Export report</button>
+      </div>
     </div>
-    <div id="staffGrid" class="staff-grid"></div>
-  </article>
+
+    <div id="attendanceStats" class="attendance-stats"></div>
+
+    <div class="attendance-tabs" role="tablist" aria-label="Attendance sections">
+      <button class="is-active" type="button" data-att-view="admin">Admin Portal</button>
+      <button type="button" data-att-view="employee">Employee Login</button>
+      <button type="button" data-att-view="reports">Reports</button>
+    </div>
+
+    <section id="attAdminView" class="attendance-view is-active">
+      <div class="attendance-layout">
+        <article class="att-card">
+          <div class="att-card-heading">
+            <div>
+              <h3>Add Employee</h3>
+              <span>Waiters, cooks and custom workers get unique login and QR.</span>
+            </div>
+          </div>
+          <form id="employeeForm" class="att-form">
+            <input name="name" placeholder="Employee name" required />
+            <select name="role" required>
+              <option value="Waiter">Waiter</option>
+              <option value="Cook">Cook</option>
+              <option value="Housekeeping">Housekeeping</option>
+              <option value="Billing">Billing</option>
+              <option value="Security">Security</option>
+              <option value="Custom">Custom worker</option>
+            </select>
+            <input name="customRole" placeholder="Custom role optional" />
+            <input name="userId" placeholder="Unique User ID" required />
+            <input name="password" placeholder="Password" required />
+            <input name="shift" placeholder="Shift, example: 9AM-6PM" required />
+            <button class="primary-button" type="submit">Create employee + QR</button>
+          </form>
+        </article>
+
+        <article class="att-card">
+          <div class="att-card-heading">
+            <div>
+              <h3>Sub-Admin Control</h3>
+              <span>Allow trusted staff to review attendance and reports.</span>
+            </div>
+          </div>
+          <form id="subAdminForm" class="att-form">
+            <input name="name" placeholder="Sub-admin name" required />
+            <input name="userId" placeholder="Sub-admin User ID" required />
+            <input name="password" placeholder="Password" required />
+            <select name="permission">
+              <option value="review">Attendance review</option>
+              <option value="reports">Reports + review</option>
+              <option value="full">Full attendance control</option>
+            </select>
+            <button class="secondary-button" type="submit">Create sub-admin</button>
+          </form>
+          <div id="subAdminList" class="sub-admin-list"></div>
+        </article>
+      </div>
+
+      <article class="att-card employee-directory-card">
+        <div class="att-card-heading">
+          <div>
+            <h3>Employee Directory</h3>
+            <span>Monitor accounts, QR status, login activity and today attendance.</span>
+          </div>
+          <div class="att-inline-filter">
+            <input id="employeeSearch" placeholder="Search employee or ID" />
+            <select id="roleFilter">
+              <option value="All">All roles</option>
+            </select>
+          </div>
+        </div>
+        <div id="employeeDirectory" class="employee-directory"></div>
+      </article>
+
+      <div class="attendance-layout">
+        <article class="att-card">
+          <div class="att-card-heading">
+            <div>
+              <h3>Pending Review</h3>
+              <span>Admin or sub-admin can approve attendance records.</span>
+            </div>
+          </div>
+          <div id="reviewQueue" class="review-list"></div>
+        </article>
+
+        <article class="att-card">
+          <div class="att-card-heading">
+            <div>
+              <h3>Login Activity</h3>
+              <span>Employee and sub-admin login audit trail.</span>
+            </div>
+          </div>
+          <div id="loginActivity" class="activity-list"></div>
+        </article>
+      </div>
+    </section>
+
+    <section id="attEmployeeView" class="attendance-view">
+      <div class="employee-login-grid">
+        <article class="att-card">
+          <div class="att-card-heading">
+            <div>
+              <h3>Employee Account Login</h3>
+              <span>Login first, then scan your personal QR to mark attendance.</span>
+            </div>
+          </div>
+          <form id="employeeLoginForm" class="att-form login-form-grid">
+            <input name="userId" placeholder="Employee User ID" required />
+            <input name="password" placeholder="Password" type="password" required />
+            <button class="primary-button" type="submit">Employee login</button>
+          </form>
+          <p id="employeeLoginMessage" class="att-message"></p>
+        </article>
+
+        <article class="att-card">
+          <div class="att-card-heading">
+            <div>
+              <h3>Sub-Admin Login</h3>
+              <span>Review worker attendance without full admin access.</span>
+            </div>
+          </div>
+          <form id="subAdminLoginForm" class="att-form login-form-grid">
+            <input name="userId" placeholder="Sub-admin User ID" required />
+            <input name="password" placeholder="Password" type="password" required />
+            <button class="secondary-button" type="submit">Sub-admin login</button>
+          </form>
+          <p id="subAdminLoginMessage" class="att-message"></p>
+        </article>
+      </div>
+
+      <article id="employeePortal" class="employee-portal att-card">
+        <div class="empty-portal">
+          <h3>No employee logged in</h3>
+          <p>Use an employee User ID and password to open the personal attendance QR.</p>
+        </div>
+      </article>
+    </section>
+
+    <section id="attReportsView" class="attendance-view">
+      <div class="attendance-layout">
+        <article class="att-card report-card">
+          <div class="att-card-heading">
+            <div>
+              <h3>Complete Attendance Report</h3>
+              <span>Today summary with present, absent, late and reviewed status.</span>
+            </div>
+          </div>
+          <div id="attendanceReport" class="attendance-report"></div>
+        </article>
+
+        <article class="att-card report-card">
+          <div class="att-card-heading">
+            <div>
+              <h3>100% Attendance Review</h3>
+              <span>Track whether every attendance mark has been reviewed.</span>
+            </div>
+          </div>
+          <div id="reviewCompletion" class="review-completion"></div>
+        </article>
+      </div>
+    </section>
+  </div>
 </section>
