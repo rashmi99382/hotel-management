@@ -4,8 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Smart Hotel Platform</title>
-    <link rel="stylesheet" href="style.css" />
-    <script defer src="script.js"></script>
+    <link rel="stylesheet" href="style.css?v=table-layout-builder-v2" />
+    <link rel="stylesheet" href="sidebar-toggle.css?v=sidebar-toggle-v2" />
+    <script defer src="script.js?v=table-layout-builder-v2"></script>
+    <script defer src="sidebar-toggle.js?v=sidebar-toggle-v2"></script>
   </head>
   <body>
     <main id="publicView" class="public-view">
@@ -18,6 +20,7 @@
           <a href="#plans">Plans</a>
           <a href="#business">Business</a>
           <a href="#education">Education</a>
+          <a href="#career">Career</a>
           <a href="#help">Help</a>
         </nav>
 
@@ -227,6 +230,52 @@
         <button class="button secondary" type="button" data-open-login>See plans and pricing</button>
       </section>
 
+      <section class="career-section" id="career">
+        <div class="career-heading">
+          <div>
+            <p class="eyebrow">Career</p>
+            <h2>Hotel and restaurant jobs near you</h2>
+            <p>Search active openings by country, state, district or block and apply directly from the website.</p>
+          </div>
+          <button class="button primary" type="button" data-open-login>Post a job</button>
+        </div>
+
+        <div class="career-search">
+          <select id="careerCountryFilter">
+            <option value="All">All countries</option>
+          </select>
+          <select id="careerStateFilter">
+            <option value="All">All states</option>
+          </select>
+          <select id="careerDistrictFilter">
+            <option value="All">All districts</option>
+          </select>
+          <input id="careerSearchInput" placeholder="Search role, company or block" />
+        </div>
+
+        <div id="publicCareerJobs" class="career-job-grid"></div>
+
+        <article id="careerApplyPanel" class="career-apply-panel">
+          <div>
+            <p class="eyebrow">Apply Now</p>
+            <h3 id="careerApplyTitle">Select a job</h3>
+            <p id="careerApplyCompany">Choose any open job to send your application.</p>
+          </div>
+          <form id="careerApplyForm" class="career-apply-form">
+            <input type="hidden" name="jobId" />
+            <input name="name" placeholder="Your name" required />
+            <input name="phone" placeholder="Mobile number" required />
+            <input name="location" placeholder="Your location" required />
+            <label class="career-upload">
+              <strong>Upload resume</strong>
+              <input name="resume" type="file" accept=".pdf,.doc,.docx,image/*" />
+            </label>
+            <button class="button primary" type="submit">Submit application</button>
+          </form>
+          <p id="careerApplyMessage" class="career-message" role="status"></p>
+        </article>
+      </section>
+
       <footer class="site-footer" id="help">
         <div class="footer-brand">
           <a class="brand" href="#home">VistaCraft</a>
@@ -243,6 +292,7 @@
           <a href="#product">AI studio</a>
           <a href="#product">Brand management</a>
           <a href="#product">Social media</a>
+          <a href="#career">Career</a>
         </div>
         <div>
           <h3>Plans</h3>
@@ -295,7 +345,7 @@
 
     <main id="appView" class="app-view is-hidden">
       <aside class="sidebar">
-        <a class="app-brand" href="#overview" data-section-link="overview">
+        <a class="app-brand" href="#" data-sidebar-toggle aria-expanded="true" aria-label="Close sidebar">
           <span>SH</span>
           <strong>Smart Hotel</strong>
         </a>
@@ -310,6 +360,8 @@
           <button class="nav-item" type="button" data-section-link="jobs">Jobs</button>
         </nav>
       </aside>
+
+      <button class="sidebar-toggle-tab" type="button" data-sidebar-toggle aria-expanded="false" aria-label="Open sidebar">SH</button>
 
       <section class="content-shell">
         <header class="app-header">

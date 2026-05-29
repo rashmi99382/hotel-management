@@ -47,23 +47,25 @@
       </div>
 
       <div class="booking-admin-view" id="bookingAdminLayout">
-        <form id="tableForm" class="stack-form mini-form inline-form">
+        <form id="tableForm" class="stack-form mini-form table-builder-form">
           <select name="roomId" required></select>
           <input name="tableName" placeholder="Table name, e.g. T1" required />
-          <select name="capacity" required>
-            <option value="2">2 persons</option>
-            <option value="4">4 persons</option>
-            <option value="6">6 persons</option>
-            <option value="8">8 persons</option>
+          <select name="shape" required>
+            <option value="round">Round table</option>
+            <option value="square">Square table</option>
+            <option value="rectangle">Rectangle table</option>
+            <option value="banquet">Long banquet table</option>
           </select>
+          <input name="capacity" type="number" min="1" max="16" value="4" placeholder="Chair count" required />
           <button class="primary-button" type="submit">Add table + chairs</button>
         </form>
-        <p class="helper-text">Drag any 3D table to change its position. Chairs are auto-created around each table based on capacity.</p>
+        <p class="helper-text">Admin can add tables according to the real chair count, pick the table shape, drag any 3D table to position it, and adjust chairs later with + or -.</p>
         <div class="layout-toolbar">
           <select id="adminLayoutFloor"></select>
           <select id="adminLayoutRoom"></select>
         </div>
         <div id="adminLayoutStage" class="table-layout-stage admin-stage"></div>
+        <div id="adminTableList" class="admin-table-list"></div>
       </div>
 
       <div class="booking-admin-view" id="bookingAdminPricing">

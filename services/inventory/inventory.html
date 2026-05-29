@@ -1,24 +1,317 @@
 <section id="inventory" class="service-section is-active">
-  <div class="section-layout">
-    <article class="panel">
-      <div class="panel-heading">
-        <h2>Smart Hotel Inventory & Cost Management</h2>
-        <span id="inventoryValue">₹0 total</span>
+  <div class="inventory-system">
+    <header class="inventory-hero">
+      <div>
+        <p class="eyebrow">Smart Hotel Inventory & Cost Management</p>
+        <h2>Inventory Command Center</h2>
+        <span>Manage purchases, daily usage, suppliers, staff access, expenses, alerts and business reports.</span>
       </div>
-      <div id="inventoryList" class="data-table"></div>
-    </article>
+      <div class="inventory-hero-actions">
+        <button class="secondary-button" type="button" id="inventorySeedButton">Load demo data</button>
+        <button class="secondary-button" type="button" id="inventoryCsvButton">Download Excel CSV</button>
+        <button class="secondary-button" type="button" id="inventoryPrintButton">Print PDF report</button>
+      </div>
+    </header>
 
-    <article class="panel">
-      <div class="panel-heading">
-        <h2>Add Stock Item</h2>
-        <span>Cost tracker</span>
+    <div id="inventoryStats" class="inventory-stats"></div>
+
+    <div class="inventory-tabs" role="tablist" aria-label="Inventory sections">
+      <button class="is-active" type="button" data-inventory-view="admin">Admin Control</button>
+      <button type="button" data-inventory-view="staff">Staff Entry</button>
+      <button type="button" data-inventory-view="products">Products & Suppliers</button>
+      <button type="button" data-inventory-view="analytics">Graphs</button>
+      <button type="button" data-inventory-view="reports">Reports</button>
+    </div>
+
+    <section id="invAdminView" class="inventory-view is-active">
+      <div class="inventory-layout">
+        <article class="inventory-card">
+          <div class="inventory-card-heading">
+            <div>
+              <h3>Employee Access</h3>
+              <span>Admin gives inventory staff a unique User ID, password and role access.</span>
+            </div>
+          </div>
+          <form id="inventoryEmployeeForm" class="inventory-form">
+            <input name="name" placeholder="Employee name" required />
+            <input name="userId" placeholder="Unique User ID" required />
+            <input name="password" placeholder="Password" required />
+            <select name="role" required>
+              <option value="Inventory Manager">Inventory Manager</option>
+              <option value="Kitchen Staff">Kitchen Staff</option>
+              <option value="Purchase Manager">Purchase Manager</option>
+              <option value="Store Keeper">Store Keeper</option>
+            </select>
+            <select name="category">
+              <option value="All">All inventory</option>
+              <option value="Vegetables">Vegetables</option>
+              <option value="Meat">Meat</option>
+              <option value="Drinks">Drinks</option>
+              <option value="Grocery">Grocery</option>
+              <option value="Cleaning Items">Cleaning Items</option>
+              <option value="Other Kitchen Items">Other Kitchen Items</option>
+            </select>
+            <button class="primary-button" type="submit">Create employee account</button>
+          </form>
+          <div id="inventoryEmployees" class="inventory-mini-list"></div>
+        </article>
+
+        <article class="inventory-card">
+          <div class="inventory-card-heading">
+            <div>
+              <h3>Expense Control</h3>
+              <span>Only admin can see total hotel expenses, profit/loss and sensitive finance.</span>
+            </div>
+          </div>
+          <form id="inventoryExpenseForm" class="inventory-form">
+            <select name="type" required>
+              <option value="Kitchen expenses">Kitchen expenses</option>
+              <option value="Staff expenses">Staff expenses</option>
+              <option value="Product purchases">Product purchases</option>
+              <option value="Daily operations">Daily operational costs</option>
+            </select>
+            <input name="amount" type="number" min="1" placeholder="Amount" required />
+            <input name="note" placeholder="Expense note" required />
+            <button class="secondary-button" type="submit">Add expense</button>
+          </form>
+          <div id="inventoryExpenseList" class="inventory-mini-list"></div>
+        </article>
       </div>
-      <form id="inventoryForm" class="stack-form">
-        <input name="item" placeholder="Item name" required />
-        <input name="qty" type="number" min="1" placeholder="Quantity" required />
-        <input name="cost" type="number" min="1" placeholder="Unit cost" required />
-        <button class="primary-button" type="submit">Add item</button>
-      </form>
-    </article>
+
+      <article class="inventory-card">
+        <div class="inventory-card-heading">
+          <div>
+            <h3>Admin Monitoring</h3>
+            <span>Stock status, purchase activity, employee actions and smart alerts in one view.</span>
+          </div>
+          <div class="inventory-filter">
+            <input id="inventorySearch" placeholder="Search product, category or supplier" />
+            <select id="inventoryCategoryFilter">
+              <option value="All">All categories</option>
+            </select>
+          </div>
+        </div>
+        <div id="inventoryProductBoard" class="inventory-product-board"></div>
+      </article>
+
+      <div class="inventory-layout">
+        <article class="inventory-card">
+          <div class="inventory-card-heading">
+            <div>
+              <h3>Smart Alerts</h3>
+              <span>Custom low-stock alert is set per product by admin.</span>
+            </div>
+          </div>
+          <div id="inventoryAlerts" class="inventory-alert-list"></div>
+        </article>
+
+        <article class="inventory-card">
+          <div class="inventory-card-heading">
+            <div>
+              <h3>Employee Activity</h3>
+              <span>Login, stock update, purchase and closing entry history.</span>
+            </div>
+          </div>
+          <div id="inventoryActivity" class="inventory-mini-list"></div>
+        </article>
+      </div>
+
+      <article class="inventory-card">
+        <div class="inventory-card-heading">
+          <div>
+            <h3>Purchase Approvals</h3>
+            <span>Admin can approve staff-submitted morning purchase entries.</span>
+          </div>
+        </div>
+        <div id="purchaseApprovalList" class="inventory-mini-list"></div>
+      </article>
+    </section>
+
+    <section id="invStaffView" class="inventory-view">
+      <div class="inventory-layout">
+        <article class="inventory-card">
+          <div class="inventory-card-heading">
+            <div>
+              <h3>Staff Login</h3>
+              <span>Employees log in with admin-created ID and password before stock work.</span>
+            </div>
+          </div>
+          <form id="inventoryStaffLoginForm" class="inventory-form single-column">
+            <input name="userId" placeholder="Inventory User ID" required />
+            <input name="password" type="password" placeholder="Password" required />
+            <button class="primary-button" type="submit">Login to inventory</button>
+          </form>
+          <p id="inventoryStaffMessage" class="inventory-message"></p>
+        </article>
+
+        <article id="inventoryStaffPortal" class="inventory-card staff-portal">
+          <div class="empty-state">
+            <h3>No staff logged in</h3>
+            <p>Use an inventory employee account to add purchases or night closing stock.</p>
+          </div>
+        </article>
+      </div>
+
+      <article class="inventory-card">
+        <div class="inventory-card-heading">
+          <div>
+            <h3>Daily Stock Entry</h3>
+            <span>Morning purchase entry and night closing entry with image upload up to 2MB.</span>
+          </div>
+        </div>
+        <form id="stockEntryForm" class="stock-entry-grid">
+          <select name="productId" required></select>
+          <select name="entryType" required>
+            <option value="morning">Morning purchase entry</option>
+            <option value="night">Night closing entry</option>
+          </select>
+          <input name="quantityReceived" type="number" min="0" step="0.01" placeholder="Total stock purchased / quantity received" />
+          <input name="purchasePrice" type="number" min="0" step="0.01" placeholder="Purchase price" />
+          <input name="remainingQty" type="number" min="0" step="0.01" placeholder="Remaining stock at night" />
+          <input name="usedQty" type="number" min="0" step="0.01" placeholder="Used quantity" />
+          <input name="wasteQty" type="number" min="0" step="0.01" placeholder="Waste quantity" />
+          <input name="supplier" placeholder="Supplier name optional" />
+          <label class="upload-box">
+            <strong>Stock photo optional, max 2MB</strong>
+            <input name="photo" type="file" accept="image/*" />
+          </label>
+          <textarea name="note" placeholder="Staff note or purchase detail"></textarea>
+          <button class="primary-button" type="submit">Save daily stock entry</button>
+        </form>
+      </article>
+
+      <article class="inventory-card">
+        <div class="inventory-card-heading">
+          <div>
+            <h3>Assigned Inventory</h3>
+            <span>Employees see stock they are allowed to manage. Sensitive finance stays hidden.</span>
+          </div>
+        </div>
+        <div id="staffAssignedInventory" class="staff-inventory-list"></div>
+      </article>
+    </section>
+
+    <section id="invProductsView" class="inventory-view">
+      <div class="inventory-layout">
+        <article class="inventory-card">
+          <div class="inventory-card-heading">
+            <div>
+              <h3>Product Management</h3>
+              <span>Add kitchen items with category, unit, supplier, price, image and custom alert.</span>
+            </div>
+          </div>
+          <form id="inventoryProductForm" class="inventory-form">
+            <input name="name" placeholder="Product name" required />
+            <select name="category" required>
+              <option value="Vegetables">Vegetables</option>
+              <option value="Meat">Meat</option>
+              <option value="Drinks">Drinks</option>
+              <option value="Grocery">Grocery</option>
+              <option value="Cleaning Items">Cleaning Items</option>
+              <option value="Other Kitchen Items">Other Kitchen Items</option>
+            </select>
+            <select name="unit" required>
+              <option value="KG">KG</option>
+              <option value="Liter">Liter</option>
+              <option value="Piece">Piece</option>
+            </select>
+            <input name="supplier" placeholder="Supplier details" required />
+            <input name="price" type="number" min="1" step="0.01" placeholder="Unit price" required />
+            <input name="lowAlert" type="number" min="0" step="0.01" placeholder="Low stock alert quantity" required />
+            <input name="expiryDate" type="date" />
+            <label class="upload-box">
+              <strong>Product image optional, max 2MB</strong>
+              <input name="image" type="file" accept="image/*" />
+            </label>
+            <button class="primary-button" type="submit">Add product</button>
+          </form>
+        </article>
+
+        <article class="inventory-card">
+          <div class="inventory-card-heading">
+            <div>
+              <h3>Supplier Management</h3>
+              <span>Store supplier contact, product history and purchase record.</span>
+            </div>
+          </div>
+          <form id="supplierForm" class="inventory-form">
+            <input name="name" placeholder="Supplier name" required />
+            <input name="contact" placeholder="Contact number" required />
+            <input name="products" placeholder="Products supplied" required />
+            <button class="secondary-button" type="submit">Add supplier</button>
+          </form>
+          <div id="supplierList" class="inventory-mini-list"></div>
+        </article>
+      </div>
+
+      <article class="inventory-card">
+        <div class="inventory-card-heading">
+          <div>
+            <h3>Product Inventory</h3>
+            <span>Vegetables, chicken, fish, rice, oil, drinks, cleaning items and other kitchen stock.</span>
+          </div>
+        </div>
+        <div id="productGrid" class="product-grid"></div>
+      </article>
+    </section>
+
+    <section id="invAnalyticsView" class="inventory-view">
+      <div class="inventory-layout">
+        <article class="inventory-card">
+          <div class="inventory-card-heading">
+            <div>
+              <h3>Individual Product Graph</h3>
+              <span>Monthly purchase, usage and cost analysis by product color.</span>
+            </div>
+            <select id="productGraphSelect"></select>
+          </div>
+          <div id="individualProductGraph" class="chart-panel"></div>
+        </article>
+
+        <article class="inventory-card">
+          <div class="inventory-card-heading">
+            <div>
+              <h3>Combined Inventory Graph</h3>
+              <span>Purchases, stock cost, daily consumption and inventory trend.</span>
+            </div>
+          </div>
+          <div id="combinedInventoryGraph" class="chart-panel"></div>
+        </article>
+      </div>
+
+      <article class="inventory-card">
+        <div class="inventory-card-heading">
+          <div>
+            <h3>Budget Analysis</h3>
+            <span>Most expensive items, cost increase alerts and monthly comparison.</span>
+          </div>
+        </div>
+        <div id="budgetAnalysis" class="budget-grid"></div>
+      </article>
+    </section>
+
+    <section id="invReportsView" class="inventory-view">
+      <div class="inventory-layout">
+        <article class="inventory-card report-card">
+          <div class="inventory-card-heading">
+            <div>
+              <h3>Admin Financial Report</h3>
+              <span>Complete purchase, usage, expense, profit/loss and activity report.</span>
+            </div>
+          </div>
+          <div id="adminFinanceReport" class="report-list"></div>
+        </article>
+
+        <article class="inventory-card report-card">
+          <div class="inventory-card-heading">
+            <div>
+              <h3>Monthly Inventory Report</h3>
+              <span>Download Excel CSV or print this report as PDF from the top buttons.</span>
+            </div>
+          </div>
+          <div id="monthlyInventoryReport" class="report-list"></div>
+        </article>
+      </div>
+    </section>
   </div>
 </section>

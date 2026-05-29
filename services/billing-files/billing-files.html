@@ -1,30 +1,242 @@
 <section id="billing" class="service-section is-active">
-  <div class="section-layout">
-    <article class="panel">
-      <div class="panel-heading">
-        <h2>Smart Billing System</h2>
-        <span id="billTotal">₹0</span>
+  <div class="billing-system">
+    <header class="billing-hero">
+      <div>
+        <p class="eyebrow">Smart Billing & QR File Transfer</p>
+        <h2>Billing Command Desk</h2>
+        <span>Create GST bills, QR bills, e-bills, UPI payments and WhatsApp sharing from one professional dashboard.</span>
       </div>
-      <div id="billItems" class="data-table"></div>
-      <form id="billForm" class="stack-form compact-form">
-        <input name="name" placeholder="Item or service" required />
-        <input name="amount" type="number" min="1" placeholder="Amount" required />
-        <button class="primary-button" type="submit">Add to bill</button>
-      </form>
-    </article>
+      <div class="billing-hero-actions">
+        <button class="secondary-button" type="button" id="billingSeedButton">Load demo billing</button>
+        <button class="secondary-button" type="button" id="billingPrintButton">PDF bill</button>
+        <button class="secondary-button" type="button" id="billingDownloadButton">Download e-bill</button>
+      </div>
+    </header>
 
-    <article class="panel">
-      <div class="panel-heading">
-        <h2>Live QR File Transfer</h2>
-        <span>Mock transfer</span>
+    <div id="billingStats" class="billing-stats"></div>
+
+    <div class="billing-tabs" role="tablist" aria-label="Billing sections">
+      <button class="is-active" type="button" data-billing-view="admin">Admin Panel</button>
+      <button type="button" data-billing-view="menu">Menu Manager</button>
+      <button type="button" data-billing-view="bill">Bill Builder</button>
+      <button type="button" data-billing-view="qr">QR / E-Bill</button>
+      <button type="button" data-billing-view="transfer">QR File Transfer</button>
+    </div>
+
+    <section id="billAdminView" class="billing-view is-active">
+      <div class="billing-layout">
+        <article class="billing-card">
+          <div class="billing-card-heading">
+            <div>
+              <h3>Hotel Billing Setup</h3>
+              <span>Admin controls GSTIN, contact, logo, UPI QR, tax and table numbers.</span>
+            </div>
+          </div>
+          <form id="hotelSetupForm" class="billing-form">
+            <input name="hotelName" placeholder="Hotel Name" required />
+            <input name="gstin" placeholder="GSTIN Number" required />
+            <textarea name="address" placeholder="Hotel Address" required></textarea>
+            <input name="contact" placeholder="Contact Number" required />
+            <input name="upiId" placeholder="UPI ID optional, example hotel@upi" />
+            <input name="taxPercent" type="number" min="0" step="0.01" placeholder="Default Tax Percentage" required />
+            <input name="tables" placeholder="Table numbers, example T1,T2,T3,VIP1" required />
+            <label class="upload-tile">
+              <strong>Logo upload</strong>
+              <input name="logo" type="file" accept="image/*" />
+            </label>
+            <label class="upload-tile">
+              <strong>UPI QR Code upload</strong>
+              <input name="upiQr" type="file" accept="image/*" />
+            </label>
+            <button class="primary-button" type="submit">Save billing setup</button>
+          </form>
+        </article>
+
+        <article class="billing-card">
+          <div class="billing-card-heading">
+            <div>
+              <h3>Staff Details</h3>
+              <span>Add cashier or billing staff details for bill control.</span>
+            </div>
+          </div>
+          <form id="billingStaffForm" class="billing-form compact-billing-form">
+            <input name="name" placeholder="Staff name" required />
+            <input name="role" placeholder="Role, example Cashier" required />
+            <input name="phone" placeholder="Contact number" required />
+            <button class="secondary-button" type="submit">Add staff</button>
+          </form>
+          <div id="billingStaffList" class="billing-list"></div>
+        </article>
       </div>
-      <div class="qr-card">
-        <div class="qr-code alt" aria-hidden="true"></div>
-        <p>Upload bill, ID proof, menu PDF, or reports</p>
-        <label class="file-drop" for="fileInput">Choose file</label>
-        <input id="fileInput" type="file" />
-        <div id="fileList" class="simple-list"></div>
+
+      <article class="billing-card">
+        <div class="billing-card-heading">
+          <div>
+            <h3>Admin Summary</h3>
+            <span>Hotel profile, UPI setup, table numbers and billing readiness.</span>
+          </div>
+        </div>
+        <div id="hotelProfilePreview" class="hotel-profile-preview"></div>
+      </article>
+    </section>
+
+    <section id="billMenuView" class="billing-view">
+      <div class="billing-layout">
+        <article class="billing-card">
+          <div class="billing-card-heading">
+            <div>
+              <h3>Food Category & Product Management</h3>
+              <span>Admin manages food categories, product names, prices, GST rates, stock and offers.</span>
+            </div>
+          </div>
+          <form id="billingProductForm" class="billing-form">
+            <input name="category" placeholder="Food category, example Pizza" required />
+            <input name="name" placeholder="Product name" required />
+            <input name="price" type="number" min="1" step="0.01" placeholder="Price" required />
+            <input name="gstRate" type="number" min="0" step="0.01" placeholder="GST Rate %" required />
+            <input name="offerPrice" type="number" min="0" step="0.01" placeholder="Offer price optional" />
+            <select name="stock" required>
+              <option value="Available">Available</option>
+              <option value="Low Stock">Low Stock</option>
+              <option value="Out of Stock">Out of Stock</option>
+            </select>
+            <button class="primary-button" type="submit">Add menu product</button>
+          </form>
+        </article>
+
+        <article class="billing-card">
+          <div class="billing-card-heading">
+            <div>
+              <h3>Category Filter</h3>
+              <span>Quickly check price, stock and GST per menu category.</span>
+            </div>
+          </div>
+          <div class="billing-filter">
+            <input id="billingProductSearch" placeholder="Search item or category" />
+            <select id="billingCategoryFilter"></select>
+          </div>
+          <div id="billingCategoryChips" class="billing-chip-row"></div>
+        </article>
       </div>
-    </article>
+
+      <article class="billing-card">
+        <div class="billing-card-heading">
+          <div>
+            <h3>Digital Menu Pricing</h3>
+            <span>These items appear in Bill Builder for selection.</span>
+          </div>
+        </div>
+        <div id="billingProductGrid" class="billing-product-grid"></div>
+      </article>
+    </section>
+
+    <section id="billBillView" class="billing-view">
+      <div class="billing-layout wide-left">
+        <article class="billing-card">
+          <div class="billing-card-heading">
+            <div>
+              <h3>Digital Menu Selection</h3>
+              <span>User selects food items and the bill calculates quantity, GST, discount and final amount.</span>
+            </div>
+            <div class="billing-filter">
+              <input id="menuSearch" placeholder="Search menu item" />
+              <select id="menuCategorySelect"></select>
+            </div>
+          </div>
+          <div id="billingMenuPicker" class="menu-picker"></div>
+        </article>
+
+        <article class="billing-card">
+          <div class="billing-card-heading">
+            <div>
+              <h3>Customer & Bill Controls</h3>
+              <span>Table, WhatsApp number, discount and payment status.</span>
+            </div>
+          </div>
+          <form id="customerBillForm" class="billing-form single-column">
+            <input name="customerName" placeholder="Customer name" />
+            <input name="whatsapp" placeholder="Customer WhatsApp number" />
+            <select name="tableNumber"></select>
+            <input name="discount" type="number" min="0" step="0.01" placeholder="Discount amount" />
+            <select name="paymentStatus">
+              <option value="Unpaid">Unpaid</option>
+              <option value="Paid">Paid</option>
+              <option value="UPI Pending">UPI Pending</option>
+            </select>
+            <textarea name="customMessage" placeholder="Custom WhatsApp message optional"></textarea>
+            <button class="primary-button" type="submit">Generate bill</button>
+          </form>
+        </article>
+      </div>
+
+      <article class="billing-card">
+        <div class="billing-card-heading">
+          <div>
+            <h3>Live Bill Cart</h3>
+            <span>Quantity, GST, discount, final amount and QR bill are generated automatically.</span>
+          </div>
+          <strong id="liveBillTotal" class="bill-total-chip">₹0</strong>
+        </div>
+        <div id="billingCart" class="billing-cart"></div>
+      </article>
+    </section>
+
+    <section id="billQrView" class="billing-view">
+      <div class="billing-layout">
+        <article class="billing-card">
+          <div class="billing-card-heading">
+            <div>
+              <h3>QR Bill & E-Bill</h3>
+              <span>Customer can scan QR, view bill, download instantly and pay through UPI.</span>
+            </div>
+          </div>
+          <div id="qrBillPanel" class="qr-bill-panel"></div>
+        </article>
+
+        <article class="billing-card">
+          <div class="billing-card-heading">
+            <div>
+              <h3>WhatsApp Bill Sharing</h3>
+              <span>Share order details, payment status, thank you message and custom message.</span>
+            </div>
+          </div>
+          <form id="whatsappBillForm" class="billing-form single-column">
+            <input name="whatsapp" placeholder="Customer WhatsApp number" />
+            <textarea name="message" placeholder="Custom message, example Thank you for dining with us"></textarea>
+            <button class="primary-button" type="submit">Open WhatsApp bill share</button>
+          </form>
+          <p class="billing-note">WhatsApp opens with bill details and payment status ready to send.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="billTransferView" class="billing-view">
+      <div class="billing-layout">
+        <article class="billing-card">
+          <div class="billing-card-heading">
+            <div>
+              <h3>Live QR File Transfer</h3>
+              <span>Upload bill PDF, ID proof, menu PDF or report and generate a transfer QR card.</span>
+            </div>
+          </div>
+          <label class="file-drop-zone" for="qrFileInput">
+            <strong>Choose file for QR transfer</strong>
+            <span>PDF, image or document</span>
+          </label>
+          <input id="qrFileInput" type="file" />
+          <div id="qrFileList" class="billing-list"></div>
+        </article>
+
+        <article class="billing-card">
+          <div class="billing-card-heading">
+            <div>
+              <h3>Generated Transfer QR</h3>
+              <span>Use this for simple PDF or file transfer inside the prototype.</span>
+            </div>
+          </div>
+          <div id="fileTransferQr" class="file-transfer-qr"></div>
+        </article>
+      </div>
+    </section>
   </div>
 </section>

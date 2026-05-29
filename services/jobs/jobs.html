@@ -1,28 +1,108 @@
 <section id="jobs" class="service-section is-active">
-  <div class="section-layout">
-    <article class="panel">
-      <div class="panel-heading">
-        <h2>Inbuilt Job Platform</h2>
-        <span>Hiring board</span>
+  <div class="jobs-system">
+    <header class="jobs-hero">
+      <div>
+        <p class="eyebrow">Inbuilt Job Platform</p>
+        <h2>Hiring Control Center</h2>
+        <span>Post hotel jobs publicly, customize each offer, and review applications from one admin panel.</span>
       </div>
-      <div id="jobList" class="job-list"></div>
-    </article>
+      <div class="jobs-hero-actions">
+        <button class="secondary-button" type="button" id="seedJobsButton">Load demo jobs</button>
+        <a class="secondary-button" href="#career" id="openCareerLink">Open public Career</a>
+      </div>
+    </header>
 
-    <article class="panel">
-      <div class="panel-heading">
-        <h2>Post Job</h2>
-        <span>Simple form</span>
-      </div>
-      <form id="jobForm" class="stack-form">
-        <input name="title" placeholder="Job title" required />
-        <input name="location" placeholder="Location" required />
-        <select name="type" required>
-          <option value="Full time">Full time</option>
-          <option value="Part time">Part time</option>
-          <option value="Internship">Internship</option>
-        </select>
-        <button class="primary-button" type="submit">Publish job</button>
-      </form>
-    </article>
+    <div id="jobStats" class="job-stats"></div>
+
+    <div class="jobs-tabs" role="tablist" aria-label="Job platform sections">
+      <button class="is-active" type="button" data-jobs-view="post">Post Job</button>
+      <button type="button" data-jobs-view="manage">Manage Jobs</button>
+      <button type="button" data-jobs-view="applications">Applications</button>
+    </div>
+
+    <section id="jobPostView" class="jobs-view is-active">
+      <article class="job-panel">
+        <div class="job-panel-heading">
+          <div>
+            <h3>Create Public Job Offer</h3>
+            <span>Published jobs appear on the main website Career section for users to search and apply.</span>
+          </div>
+        </div>
+        <form id="jobPostForm" class="job-form">
+          <input name="companyName" placeholder="Company Name" required />
+          <input name="jobRole" placeholder="Required services or job role" required />
+          <select id="jobCountrySelect" name="country" required>
+            <option value="">Select country</option>
+          </select>
+          <select id="jobStateSelect" name="state" required>
+            <option value="">Select state</option>
+          </select>
+          <select id="jobDistrictSelect" name="district" required>
+            <option value="">Select district</option>
+          </select>
+          <input name="block" placeholder="Block Selection" required />
+          <input name="salary" placeholder="Salary Details, example ₹15,000 - ₹22,000" required />
+          <input name="experience" placeholder="Experience Required" required />
+          <input name="contactName" placeholder="Contact person" required />
+          <input name="contactPhone" placeholder="Contact phone / WhatsApp" required />
+          <input name="contactEmail" placeholder="Contact email optional" />
+          <select name="layout" required>
+            <option value="professional">Professional layout</option>
+            <option value="premium">Premium highlighted layout</option>
+            <option value="compact">Compact layout</option>
+          </select>
+          <label class="job-upload">
+            <strong>Company logo optional</strong>
+            <input name="logo" type="file" accept="image/*" />
+          </label>
+          <label class="job-upload">
+            <strong>Banner image optional</strong>
+            <input name="banner" type="file" accept="image/*" />
+          </label>
+          <label class="job-check">
+            <input name="urgent" type="checkbox" />
+            <span>Highlight urgent hiring</span>
+          </label>
+          <textarea name="description" placeholder="Customize job description layout and details" required></textarea>
+          <button class="primary-button" type="submit">Publish job to Career section</button>
+        </form>
+      </article>
+    </section>
+
+    <section id="jobManageView" class="jobs-view">
+      <article class="job-panel">
+        <div class="job-panel-heading">
+          <div>
+            <h3>Published Job Offers</h3>
+            <span>Admin can edit status, urgent highlight, visibility and public contact flow.</span>
+          </div>
+          <div class="job-filter">
+            <input id="adminJobSearch" placeholder="Search company, role or location" />
+            <select id="adminJobCountryFilter">
+              <option value="All">All countries</option>
+            </select>
+            <select id="adminJobStateFilter">
+              <option value="All">All states</option>
+            </select>
+            <select id="adminJobDistrictFilter">
+              <option value="All">All districts</option>
+            </select>
+          </div>
+        </div>
+        <div id="adminJobList" class="admin-job-list"></div>
+      </article>
+    </section>
+
+    <section id="jobApplicationsView" class="jobs-view">
+      <article class="job-panel">
+        <div class="job-panel-heading">
+          <div>
+            <h3>Applications & Resumes</h3>
+            <span>Applications from the public Career section appear here for admin review.</span>
+          </div>
+        </div>
+        <div id="jobApplicationList" class="job-application-list"></div>
+      </article>
+    </section>
   </div>
 </section>

@@ -21,13 +21,13 @@ window.smartHotelServices.booking = (() => {
   ];
 
   let tableLayouts = [
-    { id: "table-t1", roomId: "room-ac", name: "T1", capacity: 4, x: 24, y: 30 },
-    { id: "table-t2", roomId: "room-ac", name: "T2", capacity: 2, x: 58, y: 28 },
-    { id: "table-t3", roomId: "room-ac", name: "T3", capacity: 6, x: 38, y: 66 },
-    { id: "table-t4", roomId: "room-vip", name: "T1", capacity: 8, x: 48, y: 46 },
-    { id: "table-t5", roomId: "room-family", name: "T1", capacity: 4, x: 26, y: 35 },
-    { id: "table-t6", roomId: "room-family", name: "T2", capacity: 8, x: 62, y: 55 },
-    { id: "table-t7", roomId: "room-nonac", name: "T1", capacity: 4, x: 44, y: 48 }
+    { id: "table-t1", roomId: "room-ac", name: "T1", capacity: 4, shape: "rectangle", x: 24, y: 30 },
+    { id: "table-t2", roomId: "room-ac", name: "T2", capacity: 2, shape: "round", x: 58, y: 28 },
+    { id: "table-t3", roomId: "room-ac", name: "T3", capacity: 6, shape: "round", x: 38, y: 66 },
+    { id: "table-t4", roomId: "room-vip", name: "T1", capacity: 8, shape: "banquet", x: 48, y: 46 },
+    { id: "table-t5", roomId: "room-family", name: "T1", capacity: 4, shape: "square", x: 26, y: 35 },
+    { id: "table-t6", roomId: "room-family", name: "T2", capacity: 8, shape: "banquet", x: 62, y: 55 },
+    { id: "table-t7", roomId: "room-nonac", name: "T1", capacity: 4, shape: "rectangle", x: 44, y: 48 }
   ];
 
   let tablePricing = [
@@ -84,6 +84,15 @@ window.smartHotelServices.booking = (() => {
   function tableLabel(table) {
     const room = rooms.find((item) => item.id === table.roomId);
     return `${room?.name || "Room"} / ${table.name} - ${table.capacity} seats`;
+  }
+
+  function shapeLabel(shape) {
+    return {
+      round: "Round",
+      square: "Square",
+      rectangle: "Rectangle",
+      banquet: "Long banquet"
+    }[shape] || "Round";
   }
 
   function floorName(floorId) {
@@ -191,8 +200,13 @@ window.smartHotelServices.booking = (() => {
     });
   }
 
-  function renderChairs(capacity) {
-    return Array.from({ length: Math.min(Number(capacity), 8) }, (_, index) => `<span class="chair c${index + 1}"></span>`).join("");
+  function renderChairs(capacity, shape = "round") {
+    const chairCount = Math.min(Math.max(Number(capacity) || 1, 1), 16);
+    const radius = shape === "banquet" ? 72 : chairCount > 8 ? 64 : 55;
+    return Array.from({ length: chairCount }, (_, index) => {
+      const angle = Math.round((360 / chairCount) * index);
+      return `<span class="chair" style="--chair-angle: ${angle}deg; --chair-radius: ${radius}px"></span>`;
+    }).join("");
   }
 
   function getTableStatus(tableId, date, slot) {
@@ -219,16 +233,17 @@ window.smartHotelServices.booking = (() => {
 
     tablesForRoom.forEach((table) => {
       const status = getTableStatus(table.id, selection.date, selection.slot);
+      const shape = table.shape || "round";
       const button = document.createElement("button");
       button.type = "button";
-      button.className = `booking-table-3d ${status}`;
+      button.className = `booking-table-3d ${status} shape-${shape}`;
       button.classList.toggle("selected", selection.tableId === table.id);
       button.dataset.tableId = table.id;
       button.style.left = `${table.x}%`;
       button.style.top = `${table.y}%`;
       button.innerHTML = `
-        ${renderChairs(table.capacity)}
-        <span class="table-top">${table.name}<small>${table.capacity} seats</small></span>
+        ${renderChairs(table.capacity, shape)}
+        <span class="table-top">${table.name}<small>${table.capacity} chairs</small></span>
       `;
       stage.append(button);
     });
@@ -267,6 +282,33 @@ window.smartHotelServices.booking = (() => {
       `;
       list.append(row);
     });
+  }
+
+  function renderAdminTableList() {
+    const list = qs("#adminTableList");
+    if (!list) return;
+    const tablesForRoom = tableLayouts.filter((table) => table.roomId === selection.adminRoomId);
+    list.innerHTML = tablesForRoom.map((table) => `
+      <article class="admin-table-card ${selection.tableId === table.id ? "is-selected" : ""}">
+        <div>
+          <strong>${table.name}</strong>
+          <span>${table.capacity} chairs | ${shapeLabel(table.shape)} | position ${table.x}%, ${table.y}%</span>
+        </div>
+        <div class="table-card-actions">
+          <button class="tiny-button" type="button" data-select-table="${table.id}">Select</button>
+          <button class="tiny-button" type="button" data-chair-action="minus" data-table-id="${table.id}">- chair</button>
+          <button class="tiny-button" type="button" data-chair-action="plus" data-table-id="${table.id}">+ chair</button>
+          <button class="tiny-button reject" type="button" data-delete-table="${table.id}">Delete</button>
+        </div>
+      </article>
+    `).join("") || `
+      <article class="admin-table-card">
+        <div>
+          <strong>No tables in this room yet</strong>
+          <span>Add the first table using the form above.</span>
+        </div>
+      </article>
+    `;
   }
 
   function buildWhatsAppUrl(booking) {
@@ -341,6 +383,7 @@ window.smartHotelServices.booking = (() => {
     renderFloorRoomList();
     renderLayoutStage("adminLayoutStage", selection.adminRoomId);
     renderLayoutStage("customerLayoutStage", selection.roomId);
+    renderAdminTableList();
     renderPricingList();
     renderBookingAdminList();
     updateSelectedBookingInfo();
@@ -418,7 +461,8 @@ window.smartHotelServices.booking = (() => {
         id: uniqueId("table"),
         roomId,
         name: String(formData.get("tableName")).trim(),
-        capacity: Number(formData.get("capacity")),
+        shape: String(formData.get("shape")) || "round",
+        capacity: Math.min(16, Math.max(1, Number(formData.get("capacity")) || 4)),
         x: 24 + (count % 3) * 26,
         y: 28 + Math.floor(count / 3) * 24
       };
@@ -500,9 +544,41 @@ window.smartHotelServices.booking = (() => {
       const tableButton = event.target.closest(".booking-table-3d");
       if (!tableButton) return;
       layoutDrag = { tableId: tableButton.dataset.tableId };
+      selection.tableId = tableButton.dataset.tableId;
       tableButton.setPointerCapture?.(event.pointerId);
       setTablePositionFromPointer(event, layoutDrag.tableId, event.currentTarget);
       renderBookingModule();
+    });
+
+    qs("#adminTableList")?.addEventListener("click", (event) => {
+      const selectButton = event.target.closest("[data-select-table]");
+      if (selectButton) {
+        selection.tableId = selectButton.dataset.selectTable;
+        renderBookingModule();
+        return;
+      }
+
+      const chairButton = event.target.closest("[data-chair-action]");
+      if (chairButton) {
+        const table = tableLayouts.find((item) => item.id === chairButton.dataset.tableId);
+        if (!table) return;
+        const delta = chairButton.dataset.chairAction === "plus" ? 1 : -1;
+        table.capacity = Math.min(16, Math.max(1, Number(table.capacity) + delta));
+        selection.tableId = table.id;
+        renderBookingModule();
+        return;
+      }
+
+      const deleteButton = event.target.closest("[data-delete-table]");
+      if (deleteButton) {
+        const table = tableLayouts.find((item) => item.id === deleteButton.dataset.deleteTable);
+        if (!table || !confirm(`Delete ${table.name} and its chair layout?`)) return;
+        tableLayouts = tableLayouts.filter((item) => item.id !== table.id);
+        tablePricing = tablePricing.filter((item) => item.tableId !== table.id);
+        bookings = bookings.filter((item) => item.tableId !== table.id);
+        if (selection.tableId === table.id) selection.tableId = null;
+        renderBookingModule();
+      }
     });
 
     qs("#customerBookingForm")?.addEventListener("submit", (event) => {
