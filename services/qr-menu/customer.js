@@ -61,6 +61,11 @@ function foodItems() {
   return Array.isArray(state.foodItems) ? state.foodItems.filter((item) => item.available) : [];
 }
 
+function featuredItems() {
+  const items = foodItems();
+  return items.filter((item) => item.featured).length ? items.filter((item) => item.featured) : items.slice(0, 3);
+}
+
 function rooms() {
   return Array.isArray(state.rooms) ? state.rooms : [];
 }
@@ -82,8 +87,11 @@ function isValidQr() {
 function renderInvalid() {
   qs("#scanHotelName").textContent = "Invalid or inactive QR";
   qs("#scanHotelAddress").textContent = "Ask the restaurant admin for the latest QR code.";
+  qs("#scanHeroMedia").innerHTML = "";
+  qs("#scanHeroStats").innerHTML = "";
   qs("#scanTabs").classList.add("is-hidden");
   qs("#scanTools").classList.add("is-hidden");
+  qs("#scanCategoryRail").classList.add("is-hidden");
   qs("#scanCategorySections").innerHTML = `
     <article class="hotel-info-card">
       <h3>Menu not available</h3>
@@ -97,14 +105,29 @@ function renderInvalid() {
 }
 
 function renderHeader() {
-  qs("#scanHotelAvatar").innerHTML = state.hotel.logo ? `<img src="${escapeHtml(state.hotel.logo)}" alt="${escapeHtml(state.hotel.name)} logo" />` : "QR";
-  qs("#scanHotelName").textContent = state.hotel.name;
-  qs("#scanHotelAddress").textContent = state.hotel.address;
+  const hotel = state.hotel || {};
+  const availableRooms = rooms().filter((room) => room.available === "available").length;
+  const heroImage = hotel.photo || featuredItems().find((item) => item.image)?.image || hotel.logo;
+  qs("#scanHotelAvatar").innerHTML = hotel.logo ? `<img src="${escapeHtml(hotel.logo)}" alt="${escapeHtml(hotel.name)} logo" />` : "QR";
+  qs("#scanHotelName").textContent = hotel.name;
+  qs("#scanHotelAddress").textContent = hotel.address;
+  qs("#scanHeroMedia").innerHTML = hotel.video
+    ? `<video src="${escapeHtml(hotel.video)}" autoplay muted loop playsinline></video>`
+    : heroImage ? `<img src="${escapeHtml(heroImage)}" alt="${escapeHtml(hotel.name || "Restaurant")} preview" />` : "";
+  qs("#scanHeroStats").innerHTML = [
+    `<span><strong>${foodItems().length}</strong> dishes</span>`,
+    `<span><strong>${categories().length}</strong> categories</span>`,
+    hotelActive() ? `<span><strong>${availableRooms}</strong> rooms</span>` : "",
+    restaurantActive() ? `<span>WhatsApp orders</span>` : ""
+  ].filter(Boolean).join("");
 }
 
 function renderFilters() {
   qs("#scanCategory").innerHTML = `<option value="All">All categories</option>${categories().map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join("")}`;
   qs("#scanCategory").value = activeCategory;
+  qs("#scanCategoryRail").innerHTML = ["All", ...categories()].map((category) => `
+    <button class="${category === activeCategory ? "is-active" : ""}" type="button" data-scan-category="${escapeHtml(category)}">${escapeHtml(category)}</button>
+  `).join("");
 }
 
 function filteredItems(category) {
@@ -118,20 +141,26 @@ function filteredItems(category) {
 
 function renderFoodCard(item) {
   return `
-    <article class="food-card ${item.featured ? "featured" : ""}">
-      <button class="food-thumb" type="button" data-open-scan-media="${escapeHtml(item.id)}">
+    <article class="food-card scan-food-card ${item.featured ? "featured" : ""}">
+      <button class="food-thumb scan-food-thumb" type="button" data-open-scan-media="${escapeHtml(item.id)}" aria-label="View ${escapeHtml(item.name)} media">
         ${item.image ? `<img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}" />` : escapeHtml(item.name.slice(0, 2).toUpperCase())}
       </button>
-      <div>
+      <div class="scan-food-body">
+        <div class="scan-food-topline">
+          <span>${escapeHtml(item.category)}</span>
+          <strong>₹${item.price}</strong>
+        </div>
         <h4>${escapeHtml(item.name)}</h4>
         <p>${escapeHtml(item.description || item.category)}</p>
         <div class="food-badges">
-          <span class="food-price">₹${item.price}</span>
-          <span class="badge">${escapeHtml(item.category)}</span>
+          <span class="badge">${item.featured ? "Chef pick" : "Fresh"}</span>
           ${item.featured ? `<span class="badge">Featured</span>` : ""}
           ${item.video ? `<span class="badge">Tap image for video</span>` : ""}
         </div>
-        <a class="order-link" href="${escapeHtml(orderLink(item))}" target="_blank" rel="noreferrer">WhatsApp order</a>
+        <div class="scan-food-actions">
+          <a class="order-link" href="${escapeHtml(orderLink(item))}" target="_blank" rel="noreferrer">Order on WhatsApp</a>
+          <button class="scan-view-button" type="button" data-open-scan-media="${escapeHtml(item.id)}">View</button>
+        </div>
       </div>
     </article>
   `;
@@ -140,6 +169,7 @@ function renderFoodCard(item) {
 function renderMenu() {
   if (!restaurantActive()) {
     qs("#scanTools").classList.add("is-hidden");
+    qs("#scanCategoryRail").classList.add("is-hidden");
     qs("#scanCategorySections").innerHTML = `
       <article class="hotel-info-card">
         <h3>Restaurant menu disabled</h3>
@@ -149,13 +179,20 @@ function renderMenu() {
     return;
   }
   qs("#scanTools").classList.remove("is-hidden");
+  qs("#scanCategoryRail").classList.remove("is-hidden");
   const visibleCategories = activeCategory === "All" ? categories() : [activeCategory];
   const sections = visibleCategories.map((category) => {
     const items = filteredItems(category);
     if (!items.length) return "";
     return `
       <section class="scan-category-block">
-        <h2>${escapeHtml(category)}</h2>
+        <div class="scan-section-heading">
+          <div>
+            <span>Fresh from kitchen</span>
+            <h2>${escapeHtml(category)}</h2>
+          </div>
+          <strong>${items.length} item${items.length === 1 ? "" : "s"}</strong>
+        </div>
         <div class="customer-food-list">${items.map(renderFoodCard).join("")}</div>
       </section>
     `;
@@ -205,6 +242,7 @@ function renderHotelInfo() {
   const roomTotal = rooms().length;
   const availableRooms = rooms().filter((room) => room.available === "available").length;
   qs("#scanHotelInfo").innerHTML = `
+    <span class="scan-section-kicker">Hotel Information</span>
     <h3>${escapeHtml(hotel.name || "Hotel Information")}</h3>
     <p>${escapeHtml(hotel.address || "Address not available")}</p>
     <div class="scan-info-grid">
@@ -222,8 +260,8 @@ function renderHotelInfo() {
 
   qs("#scanHotelGallery").innerHTML = [
     hotel.logo ? `<figure><img src="${escapeHtml(hotel.logo)}" alt="${escapeHtml(hotel.name || "Hotel")} logo" /><figcaption>Logo / picture</figcaption></figure>` : "",
-    hotel.photo ? `<figure><img src="${escapeHtml(hotel.photo)}" alt="${escapeHtml(hotel.name || "Hotel")} photo" /><figcaption>Hotel photo</figcaption></figure>` : "",
-    hotel.video ? `<figure><video src="${escapeHtml(hotel.video)}" controls></video><figcaption>Hotel video</figcaption></figure>` : ""
+    hotel.photo ? `<figure class="wide"><img src="${escapeHtml(hotel.photo)}" alt="${escapeHtml(hotel.name || "Hotel")} photo" /><figcaption>Hotel photo</figcaption></figure>` : "",
+    hotel.video ? `<figure class="wide"><video src="${escapeHtml(hotel.video)}" controls></video><figcaption>Hotel video</figcaption></figure>` : ""
   ].filter(Boolean).join("");
 
   if (!hotelActive()) {
@@ -233,8 +271,9 @@ function renderHotelInfo() {
   }
 
   qs("#scanRoomSummary").innerHTML = `
+    <span class="scan-section-kicker">Stay with us</span>
     <h3>Hotel Rooms</h3>
-    <p>Tap a room to view room photo, video, price, floor and availability.</p>
+    <p>${availableRooms} rooms available now. Tap any room to view photo, video, price, floor and availability.</p>
   `;
   qs("#scanRoomList").innerHTML = rooms().map(renderRoomCard).join("") || `
     <article class="hotel-info-card">
@@ -246,7 +285,7 @@ function renderHotelInfo() {
 
 function renderRoomCard(room) {
   return `
-    <article class="room-normal-card">
+    <article class="room-normal-card scan-room-card ${escapeHtml(room.available)}">
       <button class="room-thumb" type="button" data-open-scan-room="${escapeHtml(room.id)}">
         ${room.image ? `<img src="${escapeHtml(room.image)}" alt="${escapeHtml(room.name)}" />` : escapeHtml(room.name)}
       </button>
@@ -332,6 +371,7 @@ function boot() {
 
   qs("#scanCategory").addEventListener("change", (event) => {
     activeCategory = event.currentTarget.value;
+    renderFilters();
     renderMenu();
   });
 
@@ -339,6 +379,14 @@ function boot() {
     const tab = event.target.closest("[data-scan-page]");
     if (tab && !tab.disabled) {
       setScanPage(tab.dataset.scanPage);
+    }
+
+    const categoryButton = event.target.closest("[data-scan-category]");
+    if (categoryButton) {
+      activeCategory = categoryButton.dataset.scanCategory;
+      qs("#scanCategory").value = activeCategory;
+      renderFilters();
+      renderMenu();
     }
 
     const media = event.target.closest("[data-open-scan-media]");

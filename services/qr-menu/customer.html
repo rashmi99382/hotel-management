@@ -10,25 +10,35 @@
   </head>
   <body>
     <main class="qr-customer-page">
-      <section class="customer-phone scan-phone">
-        <header class="phone-header">
-          <div class="hotel-avatar" id="scanHotelAvatar">QR</div>
-          <div>
-            <strong id="scanHotelName">Loading menu</strong>
-            <span id="scanHotelAddress">Please wait</span>
+      <section class="scan-shell">
+        <header class="scan-hero">
+          <div id="scanHeroMedia" class="scan-hero-media"></div>
+          <div class="scan-hero-content">
+            <div class="phone-header scan-hero-title">
+              <div class="hotel-avatar" id="scanHotelAvatar">QR</div>
+              <div>
+                <strong id="scanHotelName">Loading menu</strong>
+                <span id="scanHotelAddress">Please wait</span>
+              </div>
+            </div>
+            <div id="scanHeroStats" class="scan-hero-stats"></div>
           </div>
         </header>
 
         <div id="scanTabs" class="phone-tabs">
-          <button class="is-active" type="button" data-scan-page="food">Food Menu</button>
-          <button type="button" data-scan-page="hotel">Hotel Info</button>
+          <button class="is-active" type="button" data-scan-page="food">Menu</button>
+          <button type="button" data-scan-page="hotel">Hotel</button>
         </div>
 
         <section id="scanFoodPage" class="customer-page is-active">
-          <div id="scanTools" class="customer-tools">
-            <input id="scanSearch" placeholder="Search food items" />
-            <select id="scanCategory"></select>
+          <div id="scanTools" class="scan-tools-panel">
+            <label class="scan-search-box">
+              <span>Search</span>
+              <input id="scanSearch" placeholder="Search dishes, drinks, offers" />
+            </label>
+            <select id="scanCategory" aria-label="Food category"></select>
           </div>
+          <div id="scanCategoryRail" class="scan-category-rail"></div>
           <div id="scanCategorySections" class="scan-category-sections"></div>
         </section>
 
