@@ -1,7 +1,7 @@
 const DEMO_EMAIL = "rashmiranjanabc241947@gmail.com";
 const DEMO_PASSWORD = "Rashmi@123";
 const SESSION_KEY = "smartHotelPrototypeSession";
-const ASSET_VERSION = "floor-photo-map-v7";
+const ASSET_VERSION = "floor-photo-map-v10";
 
 const publicView = document.querySelector("#publicView");
 const loginView = document.querySelector("#loginView");
