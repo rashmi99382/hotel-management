@@ -1,7 +1,7 @@
 const DEMO_EMAIL = "rashmiranjanabc241947@gmail.com";
 const DEMO_PASSWORD = "Rashmi@123";
 const SESSION_KEY = "smartHotelPrototypeSession";
-const ASSET_VERSION = "table-layout-builder-v2";
+const ASSET_VERSION = "floor-photo-map-v7";
 
 const publicView = document.querySelector("#publicView");
 const loginView = document.querySelector("#loginView");
@@ -287,7 +287,9 @@ const services = {
   booking: {
     title: "Restaurant Table Booking",
     folder: "table-booking",
-    file: "table-booking"
+    file: "table-booking",
+    extraStyles: ["table-booking-map"],
+    extraScripts: ["table-booking-map"]
   },
   menu: {
     title: "QR Restaurant Menu",
@@ -319,8 +321,12 @@ const services = {
 const loadedServiceScripts = new Set();
 const loadedServiceStyles = new Set();
 
+function getServiceAssetPath(service, file, extension) {
+  return `services/${service.folder}/${file}.${extension}?v=${ASSET_VERSION}`;
+}
+
 function getServicePath(service, extension) {
-  return `services/${service.folder}/${service.file}.${extension}?v=${ASSET_VERSION}`;
+  return getServiceAssetPath(service, service.file, extension);
 }
 
 function selectedServiceFromHash() {
@@ -349,29 +355,38 @@ function showPublic() {
 }
 
 function ensureServiceStyle(id) {
-  if (loadedServiceStyles.has(id)) return;
   const service = services[id];
-  const link = document.createElement("link");
-  link.rel = "stylesheet";
-  link.href = getServicePath(service, "css");
-  link.dataset.serviceStyle = id;
-  document.head.append(link);
-  loadedServiceStyles.add(id);
+  [service.file, ...(service.extraStyles || [])].forEach((file) => {
+    const key = `${id}:${file}`;
+    if (loadedServiceStyles.has(key)) return;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = getServiceAssetPath(service, file, "css");
+    link.dataset.serviceStyle = key;
+    document.head.append(link);
+    loadedServiceStyles.add(key);
+  });
 }
 
 function ensureServiceScript(id) {
-  if (loadedServiceScripts.has(id)) return Promise.resolve();
   const service = services[id];
+  const scriptFiles = [...(service.extraScripts || []), service.file];
+  return scriptFiles.reduce((chain, file) => chain.then(() => ensureServiceScriptFile(id, service, file)), Promise.resolve());
+}
+
+function ensureServiceScriptFile(id, service, file) {
+  const key = `${id}:${file}`;
+  if (loadedServiceScripts.has(key)) return Promise.resolve();
   return new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = getServicePath(service, "js");
+    script.src = getServiceAssetPath(service, file, "js");
     script.defer = true;
-    script.dataset.serviceScript = id;
+    script.dataset.serviceScript = key;
     script.addEventListener("load", () => {
-      loadedServiceScripts.add(id);
+      loadedServiceScripts.add(key);
       resolve();
     });
-    script.addEventListener("error", () => reject(new Error(`Unable to load ${service.file}.js`)));
+    script.addEventListener("error", () => reject(new Error(`Unable to load ${file}.js`)));
     document.body.append(script);
   });
 }
