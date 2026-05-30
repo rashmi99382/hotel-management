@@ -1,4 +1,5 @@
 const STORAGE_KEY = "smartQrMenuSystemState";
+const BOOKING_STORAGE_KEY = "smartTableBookingCustomerState";
 
 const state = (() => {
   try {
@@ -12,6 +13,9 @@ let activeCategory = "All";
 let searchText = "";
 let popupIndex = 0;
 let popupElapsed = 0;
+let activeHotelFloorId = "";
+let activeHotelRoomType = "all";
+let activeHotelRoomId = "";
 
 function qs(selector) {
   return document.querySelector(selector);
@@ -68,6 +72,61 @@ function featuredItems() {
 
 function rooms() {
   return Array.isArray(state.rooms) ? state.rooms : [];
+}
+
+function bookingCustomerState() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(BOOKING_STORAGE_KEY) || "{}");
+    if (Array.isArray(stored.floors) && stored.floors.length) {
+      return {
+        floors: stored.floors,
+        rooms: Array.isArray(stored.rooms) ? stored.rooms : [],
+        floorPictures: stored.floorPictures && typeof stored.floorPictures === "object" ? stored.floorPictures : {},
+        roomPictures: stored.roomPictures && typeof stored.roomPictures === "object" ? stored.roomPictures : {}
+      };
+    }
+  } catch {
+    // Fall back to QR hotel room data below.
+  }
+
+  const floorNames = Array.isArray(state.floors) && state.floors.length
+    ? state.floors
+    : [...new Set(rooms().map((room) => room.floor).filter(Boolean))];
+  const floors = floorNames.map((name, index) => ({ id: `qr-floor-${index + 1}`, name }));
+  const floorByName = new Map(floors.map((floor) => [floor.name, floor.id]));
+  const mappedRooms = rooms().map((room, index) => ({
+    id: room.id || `qr-room-${index + 1}`,
+    floorId: floorByName.get(room.floor) || floors[0]?.id || "",
+    name: room.name || `Room ${index + 1}`,
+    type: room.type || "Room",
+    price: room.price || 0,
+    maxPeople: room.maxPeople || "",
+    image: room.image || "",
+    openTime: room.openTime || "",
+    closeTime: room.closeTime || ""
+  }));
+  const roomPictures = mappedRooms.reduce((collection, room) => {
+    if (room.image) collection[room.id] = [{ src: room.image, name: `${room.name} photo` }];
+    return collection;
+  }, {});
+  return { floors, rooms: mappedRooms, floorPictures: {}, roomPictures };
+}
+
+function bookingFloorPhotos(data, floorId) {
+  return Array.isArray(data.floorPictures?.[floorId]) ? data.floorPictures[floorId] : [];
+}
+
+function bookingRoomPhotos(data, roomId) {
+  return Array.isArray(data.roomPictures?.[roomId]) ? data.roomPictures[roomId] : [];
+}
+
+function bookingRoomTypeOptions(data, floorId) {
+  const types = [...new Set(data.rooms.filter((room) => room.floorId === floorId).map((room) => room.type).filter(Boolean))];
+  return [{ id: "all", name: "All room types" }, ...types.map((type) => ({ id: type, name: type }))];
+}
+
+function bookingRoomsForSelection(data) {
+  return data.rooms.filter((room) => room.floorId === activeHotelFloorId && (activeHotelRoomType === "all" || room.type === activeHotelRoomType));
 }
 
 function restaurantActive() {
@@ -166,6 +225,92 @@ function renderFoodCard(item) {
   `;
 }
 
+function renderOptions(items, selectedValue, labelGetter) {
+  return items.map((item) => {
+    const value = item.id || item;
+    const label = labelGetter ? labelGetter(item) : item.name || item;
+    return `<option value="${escapeHtml(value)}" ${value === selectedValue ? "selected" : ""}>${escapeHtml(label)}</option>`;
+  }).join("");
+}
+
+function keepBookingCustomerSelection(data) {
+  if (!data.floors.some((floor) => floor.id === activeHotelFloorId)) {
+    activeHotelFloorId = data.floors[0]?.id || "";
+  }
+  const roomTypes = bookingRoomTypeOptions(data, activeHotelFloorId).map((item) => item.id);
+  if (!roomTypes.includes(activeHotelRoomType)) {
+    activeHotelRoomType = "all";
+  }
+  const roomsForSelection = bookingRoomsForSelection(data);
+  if (!roomsForSelection.some((room) => room.id === activeHotelRoomId)) {
+    activeHotelRoomId = roomsForSelection[0]?.id || "";
+  }
+}
+
+function renderBookingCustomerView() {
+  const container = qs("#scanBookingCustomerView");
+  if (!container) return;
+
+  const data = bookingCustomerState();
+  if (!hotelActive()) {
+    container.innerHTML = "";
+    return;
+  }
+  keepBookingCustomerSelection(data);
+
+  const selectedFloor = data.floors.find((floor) => floor.id === activeHotelFloorId);
+  const selectedRoom = data.rooms.find((room) => room.id === activeHotelRoomId);
+  const floorPhotos = bookingFloorPhotos(data, activeHotelFloorId);
+  const roomPhotos = bookingRoomPhotos(data, activeHotelRoomId);
+
+  container.innerHTML = `
+    <article class="hotel-info-card scan-booking-card">
+      <div class="scan-booking-heading">
+        <div>
+          <span class="scan-section-kicker">Hotel View</span>
+          <h3>Explore floors and rooms</h3>
+          <p>Select a floor and room to see photos uploaded from the table booking system.</p>
+        </div>
+      </div>
+      <div class="scan-booking-controls">
+        <select id="scanBookingFloor" aria-label="Select floor">${renderOptions(data.floors, activeHotelFloorId)}</select>
+        <select id="scanBookingRoomType" aria-label="Select room type">${renderOptions(bookingRoomTypeOptions(data, activeHotelFloorId), activeHotelRoomType)}</select>
+        <select id="scanBookingRoom" aria-label="Select room">${renderOptions(bookingRoomsForSelection(data), activeHotelRoomId, (room) => `${room.name} (${room.type})`)}</select>
+      </div>
+      <div class="scan-booking-gallery-grid">
+        <section class="scan-booking-gallery">
+          <div class="scan-booking-gallery-heading">
+            <strong>${escapeHtml(selectedFloor?.name || "Floor")} photos</strong>
+            <span>${floorPhotos.length ? "Tap to view fullscreen" : "No floor photos yet"}</span>
+          </div>
+          <div class="scan-booking-strip">
+            ${floorPhotos.map((photo, index) => `
+              <button class="scan-booking-thumb" type="button" data-view-booking-floor="${escapeHtml(activeHotelFloorId)}" data-booking-photo-index="${index}">
+                <img src="${escapeHtml(photo.src)}" alt="${escapeHtml(selectedFloor?.name || "Floor")} photo ${index + 1}" />
+                <span>Floor pic ${index + 1}</span>
+              </button>
+            `).join("") || `<div class="scan-booking-empty">Floor pictures will appear here after admin upload.</div>`}
+          </div>
+        </section>
+        <section class="scan-booking-gallery">
+          <div class="scan-booking-gallery-heading">
+            <strong>${escapeHtml(selectedRoom?.name || "Room")} photos</strong>
+            <span>${roomPhotos.length ? "Tap to view fullscreen" : "No room photos yet"}</span>
+          </div>
+          <div class="scan-booking-strip">
+            ${roomPhotos.map((photo, index) => `
+              <button class="scan-booking-thumb" type="button" data-view-booking-room="${escapeHtml(activeHotelRoomId)}" data-booking-photo-index="${index}">
+                <img src="${escapeHtml(photo.src)}" alt="${escapeHtml(selectedRoom?.name || "Room")} photo ${index + 1}" />
+                <span>Room pic ${index + 1}</span>
+              </button>
+            `).join("") || `<div class="scan-booking-empty">Room pictures will appear here after admin upload.</div>`}
+          </div>
+        </section>
+      </div>
+    </article>
+  `;
+}
+
 function renderMenu() {
   if (!restaurantActive()) {
     qs("#scanTools").classList.add("is-hidden");
@@ -207,12 +352,35 @@ function renderMenu() {
 }
 
 function showMedia(item) {
+  qs("#scanMediaModal .qr-modal-card").classList.toggle("is-video-card", Boolean(item.video));
   qs("#scanMediaBody").innerHTML = `
     <h3>${escapeHtml(item.name)}</h3>
-    ${item.video ? `<video controls src="${escapeHtml(item.video)}"></video>` : `<img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}" />`}
+    ${item.video ? `<video controls autoplay playsinline src="${escapeHtml(item.video)}"></video>` : `<img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}" />`}
     <p>${escapeHtml(item.description || item.category)}</p>
   `;
   qs("#scanMediaModal").classList.remove("is-hidden");
+}
+
+function showImage(title, image) {
+  if (!image) return;
+  qs("#scanMediaModal .qr-modal-card").classList.remove("is-video-card");
+  qs("#scanMediaBody").innerHTML = `
+    <h3>${escapeHtml(title)}</h3>
+    <img src="${escapeHtml(image)}" alt="${escapeHtml(title)}" />
+  `;
+  qs("#scanMediaModal").classList.remove("is-hidden");
+}
+
+function closeMediaModal() {
+  const modal = qs("#scanMediaModal");
+  modal.querySelectorAll("video").forEach((video) => {
+    video.pause();
+    video.removeAttribute("src");
+    video.load();
+  });
+  qs("#scanMediaBody").innerHTML = "";
+  modal.classList.add("is-hidden");
+  modal.querySelector(".qr-modal-card")?.classList.remove("is-video-card");
 }
 
 function renderTabs() {
@@ -334,9 +502,10 @@ function renderRoomCard(room) {
 }
 
 function showRoom(room) {
+  qs("#scanMediaModal .qr-modal-card").classList.toggle("is-video-card", Boolean(room.video));
   qs("#scanMediaBody").innerHTML = `
     <h3>${escapeHtml(room.name)}</h3>
-    ${room.video ? `<video controls src="${escapeHtml(room.video)}"></video>` : room.image ? `<img src="${escapeHtml(room.image)}" alt="${escapeHtml(room.name)}" />` : ""}
+    ${room.video ? `<video controls autoplay playsinline src="${escapeHtml(room.video)}"></video>` : room.image ? `<img src="${escapeHtml(room.image)}" alt="${escapeHtml(room.name)}" />` : ""}
     <p>${escapeHtml(room.floor)} | ${escapeHtml(room.position)} | ${escapeHtml(room.type)}</p>
     <strong>₹${room.price} | ${escapeHtml(room.available)}</strong>
   `;
@@ -396,6 +565,7 @@ function boot() {
   renderTabs();
   renderMenu();
   renderHotelInfo();
+  renderBookingCustomerView();
   startPopupTimer();
 
   qs("#scanSearch").addEventListener("input", (event) => {
@@ -407,6 +577,26 @@ function boot() {
     activeCategory = event.currentTarget.value;
     renderFilters();
     renderMenu();
+  });
+
+  document.addEventListener("change", (event) => {
+    if (event.target.matches("#scanBookingFloor")) {
+      activeHotelFloorId = event.target.value;
+      activeHotelRoomType = "all";
+      activeHotelRoomId = "";
+      renderBookingCustomerView();
+    }
+
+    if (event.target.matches("#scanBookingRoomType")) {
+      activeHotelRoomType = event.target.value;
+      activeHotelRoomId = "";
+      renderBookingCustomerView();
+    }
+
+    if (event.target.matches("#scanBookingRoom")) {
+      activeHotelRoomId = event.target.value;
+      renderBookingCustomerView();
+    }
   });
 
   document.addEventListener("click", (event) => {
@@ -435,7 +625,23 @@ function boot() {
       if (room) showRoom(room);
     }
 
-    if (event.target.closest("[data-close-scan-modal]")) qs("#scanMediaModal").classList.add("is-hidden");
+    const floorPhoto = event.target.closest("[data-view-booking-floor]");
+    if (floorPhoto) {
+      const data = bookingCustomerState();
+      const floor = data.floors.find((item) => item.id === floorPhoto.dataset.viewBookingFloor);
+      const photo = bookingFloorPhotos(data, floorPhoto.dataset.viewBookingFloor)[Number(floorPhoto.dataset.bookingPhotoIndex)];
+      showImage(`${floor?.name || "Floor"} photo ${Number(floorPhoto.dataset.bookingPhotoIndex) + 1}`, photo?.src);
+    }
+
+    const roomPhoto = event.target.closest("[data-view-booking-room]");
+    if (roomPhoto) {
+      const data = bookingCustomerState();
+      const room = data.rooms.find((item) => item.id === roomPhoto.dataset.viewBookingRoom);
+      const photo = bookingRoomPhotos(data, roomPhoto.dataset.viewBookingRoom)[Number(roomPhoto.dataset.bookingPhotoIndex)];
+      showImage(`${room?.name || "Room"} photo ${Number(roomPhoto.dataset.bookingPhotoIndex) + 1}`, photo?.src);
+    }
+
+    if (event.target.closest("[data-close-scan-modal]")) closeMediaModal();
     if (event.target.closest("[data-close-scan-popup]")) qs("#scanSmartPopup").classList.add("is-hidden");
   });
 }

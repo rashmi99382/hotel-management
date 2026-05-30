@@ -1,6 +1,7 @@
 window.smartHotelServices = window.smartHotelServices || {};
 
 window.smartHotelServices.booking = (() => {
+  const PUBLIC_BOOKING_KEY = "smartTableBookingCustomerState";
   const todayISO = new Date().toISOString().slice(0, 10);
   const adminWhatsAppNumber = "919999999999";
   const timeSlots = ["18:00-20:00", "20:00-22:00", "12:00-14:00", "14:00-16:00"];
@@ -57,6 +58,8 @@ window.smartHotelServices.booking = (() => {
     mediaRoomId: "room-ac"
   };
 
+  restoreCustomerSnapshot();
+
   function qs(selector) {
     return root?.querySelector(selector);
   }
@@ -77,6 +80,41 @@ window.smartHotelServices.booking = (() => {
 
   function uniqueId(prefix) {
     return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2, 7)}`;
+  }
+
+  function restoreCustomerSnapshot() {
+    try {
+      const stored = JSON.parse(localStorage.getItem(PUBLIC_BOOKING_KEY) || "{}");
+      if (Array.isArray(stored.floors) && stored.floors.length) {
+        floors = stored.floors;
+      }
+      if (Array.isArray(stored.rooms) && stored.rooms.length) {
+        rooms = stored.rooms;
+      }
+      if (stored.floorPictures && typeof stored.floorPictures === "object") {
+        floorPictures = stored.floorPictures;
+      }
+      if (stored.roomPictures && typeof stored.roomPictures === "object") {
+        roomPictures = stored.roomPictures;
+      }
+    } catch {
+      // Keep the built-in demo data if shared customer media is unavailable.
+    }
+  }
+
+  function publishCustomerSnapshot() {
+    try {
+      localStorage.setItem(PUBLIC_BOOKING_KEY, JSON.stringify({
+        version: 1,
+        updatedAt: new Date().toISOString(),
+        floors,
+        rooms,
+        floorPictures,
+        roomPictures
+      }));
+    } catch {
+      // Large local images may exceed storage; the live admin view still keeps them for this session.
+    }
   }
 
   function firstRoomForFloor(floorId) {
@@ -606,6 +644,7 @@ window.smartHotelServices.booking = (() => {
     renderPricingList();
     renderBookingAdminList();
     updateSelectedBookingInfo();
+    publishCustomerSnapshot();
   }
 
   function setTablePositionFromPointer(event, tableId, stage) {

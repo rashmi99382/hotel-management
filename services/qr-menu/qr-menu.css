@@ -564,6 +564,123 @@
   text-transform: uppercase;
 }
 
+.scan-booking-customer-view {
+  display: grid;
+  gap: 12px;
+}
+
+.scan-booking-card {
+  display: grid;
+  gap: 14px;
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, .08), rgba(18, 140, 75, .08)),
+    rgba(255, 255, 255, .96);
+}
+
+.scan-booking-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.scan-booking-heading p {
+  max-width: 680px;
+  margin: 8px 0 0;
+  color: var(--scan-muted);
+  line-height: 1.5;
+}
+
+.scan-booking-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.scan-booking-controls select {
+  width: 100%;
+  min-height: 50px;
+  border: 1px solid var(--scan-line);
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #ffffff;
+  color: var(--scan-ink);
+  font: inherit;
+  font-weight: 850;
+}
+
+.scan-booking-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.scan-booking-gallery {
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(148, 163, 184, .26);
+  border-radius: 8px;
+  padding: 12px;
+  background: #ffffff;
+}
+
+.scan-booking-gallery-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.scan-booking-gallery-heading strong {
+  color: var(--scan-ink);
+  font-size: 17px;
+}
+
+.scan-booking-gallery-heading span {
+  color: var(--scan-muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.scan-booking-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
+  gap: 10px;
+}
+
+.scan-booking-thumb {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  min-height: 150px;
+  border: 1px solid var(--scan-line);
+  border-radius: 8px;
+  padding: 8px;
+  background: #f8fafc;
+  color: var(--scan-ink);
+  font-weight: 900;
+  text-align: left;
+  box-shadow: 0 12px 26px rgba(23, 32, 51, .08);
+}
+
+.scan-booking-thumb img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.scan-booking-empty {
+  display: grid;
+  min-height: 96px;
+  place-items: center;
+  border: 1px dashed rgba(148, 163, 184, .46);
+  border-radius: 8px;
+  padding: 14px;
+  color: var(--scan-muted);
+  font-weight: 850;
+  text-align: center;
+}
+
 .qr-menu-system[data-theme="dark"] {
   --qr-panel: #111827;
   --qr-soft: #1f2937;
@@ -1207,7 +1324,7 @@
 .smart-popup {
   right: 18px;
   bottom: 18px;
-  width: min(320px, calc(100vw - 36px));
+  width: min(210px, calc(100vw - 28px));
   background: transparent;
 }
 
@@ -1225,9 +1342,9 @@
 
 .smart-popup-card {
   width: 100%;
-  padding: 14px;
+  padding: 10px;
   border: 1px solid rgba(148, 163, 184, .35);
-  border-radius: 14px;
+  border-radius: 10px;
 }
 
 .modal-close {
@@ -1251,38 +1368,72 @@
 
 #mediaModalBody img,
 #mediaModalBody video,
-#scanMediaBody img,
-#scanMediaBody video {
+#scanMediaBody img {
   width: 100%;
   max-height: 420px;
   object-fit: contain;
   border-radius: 12px;
-  background: #0f172a;
+  background: transparent;
+}
+
+#scanMediaBody img {
+  max-height: 72vh;
+}
+
+#scanMediaBody video {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 74vh;
+  margin: 0 auto;
+  border-radius: 12px;
+  background: transparent;
+}
+
+.qr-modal-card.is-video-card {
+  width: auto;
+  max-width: min(92vw, 920px);
 }
 
 .popup-image {
   width: 100%;
-  height: 96px;
-  margin: 8px 0;
+  height: 54px;
+  margin: 6px 0;
 }
 
 #scanPopupType {
   color: var(--brand);
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
 }
 
 #scanPopupTitle {
-  margin: 4px 0 0;
-  font-size: 18px;
+  margin: 3px 0 0;
+  font-size: 14px;
 }
 
 #scanPopupOffer {
-  margin: 8px 0 10px;
+  margin: 6px 0 8px;
   color: var(--muted);
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.smart-popup .primary-button {
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.smart-popup .modal-close {
+  top: 7px;
+  right: 7px;
+  width: 28px;
+  min-height: 28px;
+  font-size: 17px;
 }
 
 @media (max-width: 1180px) {
@@ -1332,6 +1483,8 @@
   .scan-hotel-metrics,
   .scan-hotel-actions,
   .scan-hotel-gallery,
+  .scan-booking-controls,
+  .scan-booking-gallery-grid,
   .scan-info-row,
   .qr-customer-page .scan-room-card {
     grid-template-columns: 1fr;
