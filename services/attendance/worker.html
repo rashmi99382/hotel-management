@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Attendance</title>
+    <link rel="stylesheet" href="../../style.css" />
+    <link rel="stylesheet" href="attendance.css?v=qr-pdf-work-v2" />
+    <script defer src="worker.js?v=qr-pdf-work-v2"></script>
+  </head>
+  <body>
+    <main class="worker-attendance-page">
+      <section class="worker-shell">
+        <article class="worker-hero">
+          <span>Attendance</span>
+          <h1>Mark your attendance date</h1>
+          <p>Login with the employee ID and password from admin, then tap the date. Yellow means pending review, green means approved.</p>
+        </article>
+
+        <article class="att-card">
+          <form id="workerLoginForm" class="att-form login-form-grid">
+            <input name="userId" placeholder="Employee User ID" required />
+            <input name="password" type="password" placeholder="Password" required />
+            <button class="primary-button" type="submit">Open attendance calendar</button>
+          </form>
+          <p id="workerMessage" class="att-message"></p>
+        </article>
+
+        <article id="workerCalendarPanel" class="att-card worker-calendar-panel"></article>
+      </section>
+    </main>
+  </body>
+</html>

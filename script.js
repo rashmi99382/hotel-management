@@ -1,7 +1,7 @@
 const DEMO_EMAIL = "rashmiranjanabc241947@gmail.com";
 const DEMO_PASSWORD = "Rashmi@123";
 const SESSION_KEY = "smartHotelPrototypeSession";
-const ASSET_VERSION = "qr-customer-work-v1";
+const ASSET_VERSION = "qr-pdf-work-v2";
 
 const publicView = document.querySelector("#publicView");
 const loginView = document.querySelector("#loginView");
@@ -285,7 +285,7 @@ const services = {
     file: "overview"
   },
   booking: {
-    title: "Restaurant Table Booking",
+    title: "Booking",
     folder: "table-booking",
     file: "table-booking",
     extraStyles: ["table-booking-map"],

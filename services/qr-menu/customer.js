@@ -16,6 +16,9 @@ let popupElapsed = 0;
 let activeHotelFloorId = "";
 let activeHotelRoomType = "all";
 let activeHotelRoomId = "";
+let activeHotelSearch = "";
+let cart = {};
+let activeBookingRoomId = "";
 
 function qs(selector) {
   return document.querySelector(selector);
@@ -46,6 +49,10 @@ function requestedHotelId() {
   return new URLSearchParams(location.search).get("hotel");
 }
 
+function workerAttendanceUrl() {
+  return new URL("../attendance/worker.html", location.href).href;
+}
+
 function phoneNumber() {
   const digits = String(state.hotel?.contact || "").replace(/\D/g, "");
   if (digits.length === 10) return `91${digits}`;
@@ -55,6 +62,74 @@ function phoneNumber() {
 function orderLink(item) {
   const message = `Order request\nHotel: ${state.hotel?.name || ""}\nItem: ${item.name}\nPrice: ₹${item.price}`;
   return `https://wa.me/${phoneNumber()}?text=${encodeURIComponent(message)}`;
+}
+
+function cartItems() {
+  return foodItems()
+    .map((item) => ({ ...item, qty: Number(cart[item.id] || 0) }))
+    .filter((item) => item.qty > 0);
+}
+
+function cartTotal() {
+  return cartItems().reduce((total, item) => total + (Number(item.price) || 0) * item.qty, 0);
+}
+
+function cartCount() {
+  return cartItems().reduce((total, item) => total + item.qty, 0);
+}
+
+function renderBillPanel() {
+  const panel = qs("#scanBillPanel");
+  if (!panel) return;
+  const items = cartItems();
+  if (!items.length) {
+    panel.innerHTML = "";
+    panel.classList.add("is-hidden");
+    return;
+  }
+  panel.classList.remove("is-hidden");
+  panel.innerHTML = `
+    <div>
+      <span>${cartCount()} item${cartCount() === 1 ? "" : "s"} selected</span>
+      <strong>Total ₹${cartTotal()}</strong>
+    </div>
+    <div class="scan-bill-actions">
+      <button class="scan-view-button" type="button" data-download-ebill>Download e-bill</button>
+      <a class="order-link" href="${escapeHtml(cartWhatsAppLink())}" target="_blank" rel="noreferrer">Send order</a>
+    </div>
+  `;
+}
+
+function cartWhatsAppLink() {
+  const lines = [
+    "Menu Order",
+    `Hotel: ${state.hotel?.name || ""}`,
+    ...cartItems().map((item) => `${item.name} x ${item.qty} = ₹${item.price * item.qty}`),
+    `Total: ₹${cartTotal()}`
+  ];
+  return `https://wa.me/${phoneNumber()}?text=${encodeURIComponent(lines.join("\n"))}`;
+}
+
+function downloadEbill() {
+  const items = cartItems();
+  if (!items.length) return;
+  const lines = [
+    "E-Bill",
+    state.hotel?.name || "Restaurant",
+    state.hotel?.address || "",
+    `Date: ${new Date().toLocaleString("en-IN")}`,
+    "",
+    ...items.map((item) => `${item.name} | Qty ${item.qty} | ₹${item.price * item.qty}`),
+    "",
+    `Total: ₹${cartTotal()}`,
+    "Thank you."
+  ];
+  const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `e-bill-${Date.now()}.txt`;
+  link.click();
+  URL.revokeObjectURL(link.href);
 }
 
 function categories() {
@@ -82,7 +157,10 @@ function bookingCustomerState() {
         floors: stored.floors,
         rooms: Array.isArray(stored.rooms) ? stored.rooms : [],
         floorPictures: stored.floorPictures && typeof stored.floorPictures === "object" ? stored.floorPictures : {},
-        roomPictures: stored.roomPictures && typeof stored.roomPictures === "object" ? stored.roomPictures : {}
+        roomPictures: stored.roomPictures && typeof stored.roomPictures === "object" ? stored.roomPictures : {},
+        roomStatus: stored.roomStatus && typeof stored.roomStatus === "object" ? stored.roomStatus : {},
+        roomDayStatus: stored.roomDayStatus && typeof stored.roomDayStatus === "object" ? stored.roomDayStatus : {},
+        roomBookings: Array.isArray(stored.roomBookings) ? stored.roomBookings : []
       };
     }
   } catch {
@@ -109,7 +187,21 @@ function bookingCustomerState() {
     if (room.image) collection[room.id] = [{ src: room.image, name: `${room.name} photo` }];
     return collection;
   }, {});
-  return { floors, rooms: mappedRooms, floorPictures: {}, roomPictures };
+  return { floors, rooms: mappedRooms, floorPictures: {}, roomPictures, roomStatus: {}, roomDayStatus: {}, roomBookings: [] };
+}
+
+function saveBookingCustomerState(data) {
+  try {
+    const current = JSON.parse(localStorage.getItem(BOOKING_STORAGE_KEY) || "{}");
+    localStorage.setItem(BOOKING_STORAGE_KEY, JSON.stringify({
+      ...current,
+      roomStatus: data.roomStatus || {},
+      roomDayStatus: data.roomDayStatus || {},
+      roomBookings: Array.isArray(data.roomBookings) ? data.roomBookings : []
+    }));
+  } catch {
+    // Prototype storage can fail with large uploaded images; WhatsApp still opens for the booking request.
+  }
 }
 
 function bookingFloorPhotos(data, floorId) {
@@ -127,6 +219,102 @@ function bookingRoomTypeOptions(data, floorId) {
 
 function bookingRoomsForSelection(data) {
   return data.rooms.filter((room) => room.floorId === activeHotelFloorId && (activeHotelRoomType === "all" || room.type === activeHotelRoomType));
+}
+
+function visibleBookingRooms(data) {
+  const query = activeHotelSearch.trim().toLowerCase();
+  return bookingRoomsForSelection(data).filter((room) => {
+    if (!query) return true;
+    const floor = data.floors.find((item) => item.id === room.floorId);
+    return `${room.name} ${room.type} ${floor?.name || ""} ${room.price}`.toLowerCase().includes(query);
+  });
+}
+
+function bookingRoomControl(data, roomId) {
+  const control = data.roomStatus?.[roomId] || {};
+  return {
+    available: control.available !== false,
+    note: control.note || ""
+  };
+}
+
+function addDays(date, days) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function dateISO(date) {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+function formatDayLabel(iso) {
+  const date = new Date(`${iso}T00:00:00`);
+  return date.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+}
+
+function isDateInsideBooking(iso, booking) {
+  const from = booking.fromDate || booking.date || "";
+  const to = booking.toDate || booking.date || from;
+  return iso >= from && iso <= to;
+}
+
+function bookingApproved(booking) {
+  return booking.status === "approved" || booking.status === "booked";
+}
+
+function bookingForDate(data, roomId, day, status) {
+  return (Array.isArray(data.roomBookings) ? data.roomBookings : []).find((booking) => {
+    if (booking.roomId !== roomId || !isDateInsideBooking(day, booking)) return false;
+    if (status === "approved") return bookingApproved(booking);
+    if (status === "pending") return booking.status === "pending";
+    return true;
+  });
+}
+
+function roomBookingDayStatus(data, roomId, day) {
+  const control = bookingRoomControl(data, roomId);
+  const dayStatus = data.roomDayStatus?.[roomId] || {};
+  if (!control.available || dayStatus[day] === "closed") return "closed";
+  if (bookingForDate(data, roomId, day, "approved")) return "approved";
+  if (bookingForDate(data, roomId, day, "pending")) return "pending";
+  return "open";
+}
+
+function renderBookingCalendar(data, roomId) {
+  const days = Array.from({ length: 28 }, (_, index) => dateISO(addDays(new Date(), index)));
+  return `
+    <div class="scan-room-calendar" aria-label="Room booking calendar">
+      ${days.map((day) => {
+        const status = roomBookingDayStatus(data, roomId, day);
+        const label = status === "approved" ? "Booked" : status === "pending" ? "Pending" : status === "closed" ? "Not available" : "Open";
+        return `<span class="is-${status}" title="${label} ${formatDayLabel(day)}">${formatDayLabel(day)}</span>`;
+      }).join("")}
+    </div>
+  `;
+}
+
+function roomDateAvailable(data, roomId, day) {
+  return roomBookingDayStatus(data, roomId, day) === "open";
+}
+
+function roomBookingWhatsApp(room, floor, booking) {
+  const message = [
+    "Room Booking Request",
+    `Hotel: ${state.hotel?.name || ""}`,
+    `Floor: ${floor?.name || ""}`,
+    `Room: ${room.name}`,
+    `Type: ${room.type}`,
+    `From: ${booking.fromDate}`,
+    `To: ${booking.toDate}`,
+    `Name: ${booking.name}`,
+    `Mobile: ${booking.mobile}`,
+    `Status: Pending admin confirmation`,
+    `Note: ${booking.note || "None"}`
+  ].join("\n");
+  return `https://wa.me/${phoneNumber()}?text=${encodeURIComponent(message)}`;
 }
 
 function restaurantActive() {
@@ -199,6 +387,7 @@ function filteredItems(category) {
 }
 
 function renderFoodCard(item) {
+  const qty = Number(cart[item.id] || 0);
   return `
     <article class="food-card scan-food-card ${item.featured ? "featured" : ""}">
       <button class="food-thumb scan-food-thumb" type="button" data-open-scan-media="${escapeHtml(item.id)}" aria-label="View ${escapeHtml(item.name)} media">
@@ -219,6 +408,12 @@ function renderFoodCard(item) {
         <div class="scan-food-actions">
           <a class="order-link" href="${escapeHtml(orderLink(item))}" target="_blank" rel="noreferrer">Order on WhatsApp</a>
           <button class="scan-view-button" type="button" data-open-scan-media="${escapeHtml(item.id)}">View</button>
+        </div>
+        <div class="scan-qty-row">
+          <button type="button" data-cart-minus="${escapeHtml(item.id)}">-</button>
+          <strong>${qty}</strong>
+          <button type="button" data-cart-plus="${escapeHtml(item.id)}">+</button>
+          <span>₹${qty * Number(item.price || 0)}</span>
         </div>
       </div>
     </article>
@@ -247,6 +442,128 @@ function keepBookingCustomerSelection(data) {
   }
 }
 
+function renderScanBookingRoomCard(data, room) {
+  const floor = data.floors.find((item) => item.id === room.floorId);
+  const photos = bookingRoomPhotos(data, room.id);
+  const firstPhoto = photos[0];
+  const control = bookingRoomControl(data, room.id);
+  const disabled = control.available ? "" : "disabled";
+  return `
+    <article class="scan-booking-room-card" data-scan-booking-room-card="${escapeHtml(room.id)}">
+      <button class="scan-booking-room-photo" type="button" data-view-booking-room="${escapeHtml(room.id)}" data-booking-photo-index="0" ${firstPhoto ? "" : "disabled"}>
+        ${firstPhoto ? `<img src="${escapeHtml(firstPhoto.src)}" alt="${escapeHtml(room.name)} room photo" />` : `<span>No photo yet</span>`}
+      </button>
+      <div class="scan-booking-room-body">
+        <div class="scan-booking-room-title">
+          <div>
+            <span>${escapeHtml(floor?.name || "Floor")} | ${escapeHtml(room.type)}</span>
+            <h4>${escapeHtml(room.name)}</h4>
+          </div>
+          <strong>₹${room.price || 0}</strong>
+        </div>
+        <div class="scan-room-status-line">
+          <span class="${control.available ? "is-open" : "is-closed"}">${control.available ? "Available" : "Not available"}</span>
+          ${control.note ? `<em>${escapeHtml(control.note)}</em>` : ""}
+        </div>
+        <div class="scan-room-more-row">
+          <button class="scan-view-button" type="button" data-view-booking-room="${escapeHtml(room.id)}" data-booking-photo-index="0" ${firstPhoto ? "" : "disabled"}>View images</button>
+          <span>${photos.length} photo${photos.length === 1 ? "" : "s"}</span>
+        </div>
+        <button class="order-link" type="button" data-open-room-booking="${escapeHtml(room.id)}" ${disabled}>Book now</button>
+      </div>
+    </article>
+  `;
+}
+
+function openRoomBookingModal(roomId) {
+  const data = bookingCustomerState();
+  const room = data.rooms.find((item) => item.id === roomId);
+  if (!room) return;
+  activeBookingRoomId = roomId;
+  const floor = data.floors.find((item) => item.id === room.floorId);
+  const days = Array.from({ length: 183 }, (_, index) => dateISO(addDays(new Date(), index)));
+  qs("#scanRoomBookingBody").innerHTML = `
+    <div class="room-booking-modal-heading">
+      <span class="scan-section-kicker">${escapeHtml(floor?.name || "Floor")} | ${escapeHtml(room.type)}</span>
+      <h3>${escapeHtml(room.name)}</h3>
+      <p>Fill your name and mobile first. Yellow dates are waiting for admin approval, green dates need the security code.</p>
+    </div>
+    <div class="room-booking-fields">
+      <input id="roomBookingName" placeholder="Your name" />
+      <input id="roomBookingMobile" placeholder="Mobile number" inputmode="tel" />
+      <input id="roomBookingNote" placeholder="Request optional" />
+    </div>
+    <div class="room-booking-status-note">
+      <span class="open">Open</span>
+      <span class="pending">Pending</span>
+      <span class="approved">Booked</span>
+      <span class="closed">Closed</span>
+    </div>
+    <div class="room-booking-calendar">
+      ${days.map((day) => {
+        const status = roomBookingDayStatus(data, roomId, day);
+        const isOpen = status === "open";
+        const isApproved = status === "approved";
+        const actionAttr = isOpen ? `data-book-room-date="${day}"` : isApproved ? `data-check-booked-date="${day}"` : "";
+        const disabled = status === "pending" || status === "closed" ? "disabled" : "";
+        const label = status === "approved" ? "Booked" : status === "pending" ? "Pending" : status === "closed" ? "Closed" : "Request";
+        return `
+          <button type="button" class="is-${status}" ${actionAttr} ${disabled}>
+            <strong>${formatDayLabel(day)}</strong>
+            <span>${label}</span>
+          </button>
+        `;
+      }).join("")}
+    </div>
+  `;
+  qs("#scanRoomBookingModal").classList.remove("is-hidden");
+}
+
+function submitRoomDateBooking(day) {
+  const data = bookingCustomerState();
+  const room = data.rooms.find((item) => item.id === activeBookingRoomId);
+  const floor = data.floors.find((item) => item.id === room?.floorId);
+  if (!room || !roomDateAvailable(data, room.id, day)) return;
+  const name = qs("#roomBookingName")?.value.trim() || "";
+  const mobile = qs("#roomBookingMobile")?.value.trim() || "";
+  if (!name || !mobile) {
+    alert("Please fill your name and mobile number before selecting a date.");
+    return;
+  }
+  const booking = {
+    id: `room-booking-${Date.now()}`,
+    roomId: room.id,
+    roomName: room.name,
+    name,
+    mobile,
+    fromDate: day,
+    toDate: day,
+    note: qs("#roomBookingNote")?.value.trim() || "",
+    status: "pending",
+    securityCode: "",
+    createdAt: new Date().toISOString()
+  };
+  data.roomBookings = Array.isArray(data.roomBookings) ? data.roomBookings : [];
+  data.roomBookings.push(booking);
+  saveBookingCustomerState(data);
+  window.open(roomBookingWhatsApp(room, floor, booking), "_blank", "noopener,noreferrer");
+  qs("#scanRoomBookingModal").classList.add("is-hidden");
+  renderBookingCustomerView();
+}
+
+function verifyApprovedRoomBooking(day) {
+  const data = bookingCustomerState();
+  const booking = bookingForDate(data, activeBookingRoomId, day, "approved");
+  if (!booking) return;
+  const code = prompt("Enter the booking security code from admin.");
+  if (!code) return;
+  if (String(booking.securityCode || "").trim() !== code.trim()) {
+    alert("Invalid security code. Please check the code shared by admin.");
+    return;
+  }
+  alert(`Booking confirmed\nName: ${booking.name}\nMobile: ${booking.mobile}\nRoom: ${booking.roomName}\nDate: ${booking.fromDate || booking.date}`);
+}
+
 function renderBookingCustomerView() {
   const container = qs("#scanBookingCustomerView");
   if (!container) return;
@@ -259,9 +576,9 @@ function renderBookingCustomerView() {
   keepBookingCustomerSelection(data);
 
   const selectedFloor = data.floors.find((floor) => floor.id === activeHotelFloorId);
-  const selectedRoom = data.rooms.find((room) => room.id === activeHotelRoomId);
   const floorPhotos = bookingFloorPhotos(data, activeHotelFloorId);
-  const roomPhotos = bookingRoomPhotos(data, activeHotelRoomId);
+  const firstFloorPhoto = floorPhotos[0];
+  const visibleRooms = visibleBookingRooms(data);
 
   container.innerHTML = `
     <article class="hotel-info-card scan-booking-card">
@@ -269,19 +586,39 @@ function renderBookingCustomerView() {
         <div>
           <span class="scan-section-kicker">Hotel View</span>
           <h3>Explore floors and rooms</h3>
-          <p>Select a floor and room to see photos uploaded from the table booking system.</p>
+          <p>Select a floor, search a room, view photos and send a booking request to admin on WhatsApp.</p>
         </div>
       </div>
       <div class="scan-booking-controls">
         <select id="scanBookingFloor" aria-label="Select floor">${renderOptions(data.floors, activeHotelFloorId)}</select>
         <select id="scanBookingRoomType" aria-label="Select room type">${renderOptions(bookingRoomTypeOptions(data, activeHotelFloorId), activeHotelRoomType)}</select>
         <select id="scanBookingRoom" aria-label="Select room">${renderOptions(bookingRoomsForSelection(data), activeHotelRoomId, (room) => `${room.name} (${room.type})`)}</select>
+        <input id="scanBookingSearch" type="search" placeholder="Search room, floor, AC, VIP" value="${escapeHtml(activeHotelSearch)}" />
       </div>
-      <div class="scan-booking-gallery-grid">
+      <div class="scan-booking-floor-feature">
+        <button class="scan-booking-floor-photo" type="button" data-view-booking-floor="${escapeHtml(activeHotelFloorId)}" data-booking-photo-index="0" ${firstFloorPhoto ? "" : "disabled"}>
+          ${firstFloorPhoto ? `<img src="${escapeHtml(firstFloorPhoto.src)}" alt="${escapeHtml(selectedFloor?.name || "Floor")} main photo" />` : `<span>Floor photo will appear here</span>`}
+        </button>
+        <div>
+          <span class="scan-section-kicker">${escapeHtml(selectedFloor?.name || "Floor")}</span>
+          <h4>Floor overview</h4>
+          <p>${floorPhotos.length ? "First floor photo is visible immediately. Tap it to open fullscreen." : "Admin can upload floor photos from Booking."}</p>
+        </div>
+      </div>
+      <section class="scan-booking-gallery">
+        <div class="scan-booking-gallery-heading">
+          <strong>Rooms ready for customer view</strong>
+          <span>${visibleRooms.length} room${visibleRooms.length === 1 ? "" : "s"}</span>
+        </div>
+        <div class="scan-booking-room-grid">
+          ${visibleRooms.map((room) => renderScanBookingRoomCard(data, room)).join("") || `<div class="scan-booking-empty">No room found for this search.</div>`}
+        </div>
+      </section>
+      ${floorPhotos.length > 1 ? `
         <section class="scan-booking-gallery">
           <div class="scan-booking-gallery-heading">
-            <strong>${escapeHtml(selectedFloor?.name || "Floor")} photos</strong>
-            <span>${floorPhotos.length ? "Tap to view fullscreen" : "No floor photos yet"}</span>
+            <strong>More floor photos</strong>
+            <span>${floorPhotos.length} photos</span>
           </div>
           <div class="scan-booking-strip">
             ${floorPhotos.map((photo, index) => `
@@ -289,24 +626,10 @@ function renderBookingCustomerView() {
                 <img src="${escapeHtml(photo.src)}" alt="${escapeHtml(selectedFloor?.name || "Floor")} photo ${index + 1}" />
                 <span>Floor pic ${index + 1}</span>
               </button>
-            `).join("") || `<div class="scan-booking-empty">Floor pictures will appear here after admin upload.</div>`}
+            `).join("")}
           </div>
         </section>
-        <section class="scan-booking-gallery">
-          <div class="scan-booking-gallery-heading">
-            <strong>${escapeHtml(selectedRoom?.name || "Room")} photos</strong>
-            <span>${roomPhotos.length ? "Tap to view fullscreen" : "No room photos yet"}</span>
-          </div>
-          <div class="scan-booking-strip">
-            ${roomPhotos.map((photo, index) => `
-              <button class="scan-booking-thumb" type="button" data-view-booking-room="${escapeHtml(activeHotelRoomId)}" data-booking-photo-index="${index}">
-                <img src="${escapeHtml(photo.src)}" alt="${escapeHtml(selectedRoom?.name || "Room")} photo ${index + 1}" />
-                <span>Room pic ${index + 1}</span>
-              </button>
-            `).join("") || `<div class="scan-booking-empty">Room pictures will appear here after admin upload.</div>`}
-          </div>
-        </section>
-      </div>
+      ` : ""}
     </article>
   `;
 }
@@ -315,6 +638,7 @@ function renderMenu() {
   if (!restaurantActive()) {
     qs("#scanTools").classList.add("is-hidden");
     qs("#scanCategoryRail").classList.add("is-hidden");
+    qs("#scanBillPanel")?.classList.add("is-hidden");
     qs("#scanCategorySections").innerHTML = `
       <article class="hotel-info-card">
         <h3>Restaurant menu disabled</h3>
@@ -325,6 +649,7 @@ function renderMenu() {
   }
   qs("#scanTools").classList.remove("is-hidden");
   qs("#scanCategoryRail").classList.remove("is-hidden");
+  renderBillPanel();
   const visibleCategories = activeCategory === "All" ? categories() : [activeCategory];
   const sections = visibleCategories.map((category) => {
     const items = filteredItems(category);
@@ -410,6 +735,17 @@ function actionTile(href, label, value) {
   `;
 }
 
+function footerTile(href, icon, label) {
+  if (!href) return "";
+  const target = href.startsWith("tel:") ? "_self" : "_blank";
+  return `
+    <a class="scan-footer-link" href="${escapeHtml(href)}" target="${target}" rel="noreferrer">
+      <span>${escapeHtml(icon)}</span>
+      <strong>${escapeHtml(label)}</strong>
+    </a>
+  `;
+}
+
 function renderHotelInfo() {
   const hotel = state.hotel || {};
   const roomTotal = rooms().length;
@@ -426,56 +762,28 @@ function renderHotelInfo() {
   const instagramHref = safeUrl(hotel.instagram);
   const facebookHref = safeUrl(hotel.facebook);
   qs("#scanHotelInfo").innerHTML = `
-    <div class="scan-hotel-overview">
-      <div>
-        <span class="scan-section-kicker">Hotel Information</span>
-        <h3>${escapeHtml(hotel.name || "Hotel Information")}</h3>
-        <p>${escapeHtml(hotel.address || "Address not available")}</p>
-      </div>
-      <div class="scan-hotel-metrics">
-        <span><strong>${availableRooms}</strong>Available rooms</span>
-        <span><strong>${roomTotal}</strong>Total rooms</span>
-        ${bestPrice ? `<span><strong>₹${bestPrice}</strong>Starting price</span>` : ""}
-        ${roomTypes ? `<span><strong>${escapeHtml(roomTypes)}</strong>Room types</span>` : ""}
-      </div>
-      <div class="scan-hotel-actions">
-        ${actionTile(locationHref, "Find us", "Location")}
-        ${actionTile(phoneHref, "Talk to us", hotel.contact || "Call")}
-        ${actionTile(reviewHref, "Experience", "Review")}
-        ${actionTile(instagramHref, "Social", "Instagram")}
-        ${actionTile(facebookHref, "Social", "Facebook")}
+    <div class="scan-footer-panel">
+      <span class="scan-section-kicker">Quick links</span>
+      <div class="scan-footer-links">
+        ${footerTile(workerAttendanceUrl(), "AT", "Attendance")}
+        ${footerTile(locationHref, "LO", "Location")}
+        ${footerTile(instagramHref, "IG", "Instagram")}
+        ${footerTile(facebookHref, "FB", "Facebook")}
+        ${footerTile(phoneHref, "PH", hotel.contact || "Call admin")}
       </div>
     </div>
   `;
 
-  qs("#scanHotelGallery").innerHTML = [
-    hotel.photo ? `<figure class="feature"><img src="${escapeHtml(hotel.photo)}" alt="${escapeHtml(hotel.name || "Hotel")} photo" /><figcaption>Hotel photo</figcaption></figure>` : "",
-    hotel.video ? `<figure class="feature"><video src="${escapeHtml(hotel.video)}" controls></video><figcaption>Hotel video</figcaption></figure>` : "",
-    hotel.logo ? `<figure><img src="${escapeHtml(hotel.logo)}" alt="${escapeHtml(hotel.name || "Hotel")} logo" /><figcaption>Logo / picture</figcaption></figure>` : ""
-  ].filter(Boolean).join("");
+  qs("#scanHotelGallery").innerHTML = "";
 
   if (!hotelActive()) {
-    qs("#scanRoomSummary").innerHTML = "<h3>Hotel section disabled</h3><p>The admin has enabled restaurant menu only for this QR.</p>";
+    qs("#scanRoomSummary").innerHTML = "";
     qs("#scanRoomList").innerHTML = "";
     return;
   }
 
-  qs("#scanRoomSummary").innerHTML = `
-    <div class="scan-room-summary">
-      <div>
-        <span class="scan-section-kicker">Stay with us</span>
-        <h3>Rooms & availability</h3>
-        <p>${availableLabel} available now. Choose a room to view photo, video, floor, type and price.</p>
-      </div>
-      ${bestPrice ? `<strong>From ₹${bestPrice}</strong>` : ""}
-    </div>
-  `;
-  qs("#scanRoomList").innerHTML = rooms().map(renderRoomCard).join("") || `
-    <article class="hotel-info-card">
-      <h3>No rooms added</h3>
-      <p>Admin can add floors and rooms from the QR Menu dashboard.</p>
-    </article>
-  `;
+  qs("#scanRoomSummary").innerHTML = "";
+  qs("#scanRoomList").innerHTML = "";
 }
 
 function renderRoomCard(room) {
@@ -599,6 +907,19 @@ function boot() {
     }
   });
 
+  document.addEventListener("input", (event) => {
+    if (event.target.matches("#scanBookingSearch")) {
+      activeHotelSearch = event.target.value;
+      renderBookingCustomerView();
+      requestAnimationFrame(() => {
+        const input = qs("#scanBookingSearch");
+        if (!input) return;
+        input.focus();
+        input.setSelectionRange(activeHotelSearch.length, activeHotelSearch.length);
+      });
+    }
+  });
+
   document.addEventListener("click", (event) => {
     const tab = event.target.closest("[data-scan-page]");
     if (tab && !tab.disabled) {
@@ -617,6 +938,30 @@ function boot() {
     if (media) {
       const item = foodItems().find((food) => food.id === media.dataset.openScanMedia);
       if (item) showMedia(item);
+    }
+
+    const cartPlus = event.target.closest("[data-cart-plus]");
+    if (cartPlus) {
+      const id = cartPlus.dataset.cartPlus;
+      cart[id] = Number(cart[id] || 0) + 1;
+      renderBillPanel();
+      renderMenu();
+      return;
+    }
+
+    const cartMinus = event.target.closest("[data-cart-minus]");
+    if (cartMinus) {
+      const id = cartMinus.dataset.cartMinus;
+      cart[id] = Math.max(0, Number(cart[id] || 0) - 1);
+      if (!cart[id]) delete cart[id];
+      renderBillPanel();
+      renderMenu();
+      return;
+    }
+
+    if (event.target.closest("[data-download-ebill]")) {
+      downloadEbill();
+      return;
     }
 
     const roomButton = event.target.closest("[data-open-scan-room]");
@@ -641,7 +986,61 @@ function boot() {
       showImage(`${room?.name || "Room"} photo ${Number(roomPhoto.dataset.bookingPhotoIndex) + 1}`, photo?.src);
     }
 
+    const openBooking = event.target.closest("[data-open-room-booking]");
+    if (openBooking) {
+      openRoomBookingModal(openBooking.dataset.openRoomBooking);
+      return;
+    }
+
+    const dateButton = event.target.closest("[data-book-room-date]");
+    if (dateButton) {
+      submitRoomDateBooking(dateButton.dataset.bookRoomDate);
+      return;
+    }
+
+    const bookedDateButton = event.target.closest("[data-check-booked-date]");
+    if (bookedDateButton) {
+      verifyApprovedRoomBooking(bookedDateButton.dataset.checkBookedDate);
+      return;
+    }
+
+    const bookRoomButton = event.target.closest("[data-book-scan-room]");
+    if (bookRoomButton) {
+      const data = bookingCustomerState();
+      const room = data.rooms.find((item) => item.id === bookRoomButton.dataset.bookScanRoom);
+      const floor = data.floors.find((item) => item.id === room?.floorId);
+      const card = bookRoomButton.closest("[data-scan-booking-room-card]");
+      if (!room || !card) return;
+      const booking = {
+        id: `room-booking-${Date.now()}`,
+        roomId: room.id,
+        roomName: room.name,
+        name: card.querySelector("[data-room-booking-name]")?.value.trim(),
+        mobile: card.querySelector("[data-room-booking-mobile]")?.value.trim(),
+        fromDate: card.querySelector("[data-room-booking-from]")?.value,
+        toDate: card.querySelector("[data-room-booking-to]")?.value,
+        note: card.querySelector("[data-room-booking-note]")?.value.trim(),
+        status: "pending",
+        securityCode: "",
+        createdAt: new Date().toISOString()
+      };
+      if (!booking.name || !booking.mobile || !booking.fromDate || !booking.toDate) {
+        alert("Please fill name, mobile, from date and to date.");
+        return;
+      }
+      if (booking.toDate < booking.fromDate) {
+        alert("To date must be after from date.");
+        return;
+      }
+      data.roomBookings = Array.isArray(data.roomBookings) ? data.roomBookings : [];
+      data.roomBookings.push(booking);
+      saveBookingCustomerState(data);
+      window.open(roomBookingWhatsApp(room, floor, booking), "_blank", "noopener,noreferrer");
+      renderBookingCustomerView();
+    }
+
     if (event.target.closest("[data-close-scan-modal]")) closeMediaModal();
+    if (event.target.closest("[data-close-room-booking]")) qs("#scanRoomBookingModal").classList.add("is-hidden");
     if (event.target.closest("[data-close-scan-popup]")) qs("#scanSmartPopup").classList.add("is-hidden");
   });
 }

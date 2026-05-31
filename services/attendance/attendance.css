@@ -259,6 +259,177 @@
   margin: 0;
 }
 
+.worker-attendance-page {
+  min-height: 100vh;
+  padding: 22px;
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, .12), rgba(18, 149, 87, .1)),
+    #f8fafc;
+}
+
+.worker-shell {
+  display: grid;
+  gap: 14px;
+  width: min(980px, 100%);
+  margin: 0 auto;
+}
+
+.worker-hero {
+  border-radius: 8px;
+  padding: 24px;
+  background:
+    linear-gradient(135deg, rgba(15, 23, 42, .94), rgba(37, 99, 235, .88)),
+    #0f172a;
+  color: #ffffff;
+  box-shadow: 0 22px 54px rgba(15, 23, 42, .18);
+}
+
+.worker-hero span {
+  color: rgba(255, 255, 255, .72);
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.worker-hero h1 {
+  margin: 8px 0;
+  font-size: clamp(34px, 6vw, 58px);
+  line-height: .98;
+}
+
+.worker-hero p {
+  max-width: 680px;
+  margin: 0;
+  color: rgba(255, 255, 255, .82);
+  font-weight: 760;
+}
+
+.worker-calendar-panel {
+  min-height: 220px;
+}
+
+.worker-calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.worker-calendar-legend span {
+  border-radius: 999px;
+  padding: 7px 10px;
+  background: #f1f5f9;
+  color: var(--att-muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.worker-calendar-legend .pending {
+  background: rgba(250, 204, 21, .2);
+  color: #854d0e;
+}
+
+.worker-calendar-legend .approved {
+  background: rgba(18, 149, 87, .14);
+  color: var(--att-green);
+}
+
+.worker-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.worker-months {
+  display: grid;
+  gap: 14px;
+}
+
+.worker-month-card,
+.employee-mini-month,
+.employee-month-card {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--att-line);
+  border-radius: 8px;
+  padding: 12px;
+  background: #ffffff;
+}
+
+.employee-month-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  color: var(--att-ink);
+}
+
+.employee-month-head span {
+  color: var(--att-muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.worker-calendar-grid button,
+.attendance-day {
+  display: grid;
+  gap: 3px;
+  min-height: 64px;
+  border: 1px solid var(--att-line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--att-ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.worker-calendar-grid button.is-pending,
+.attendance-day.is-pending {
+  border-color: rgba(250, 204, 21, .42);
+  background: #facc15;
+  color: #422006;
+}
+
+.worker-calendar-grid button.is-approved,
+.attendance-day.is-present {
+  border-color: rgba(18, 149, 87, .28);
+  background: var(--att-green);
+  color: #ffffff;
+}
+
+.attendance-day.is-absent {
+  border-color: rgba(239, 68, 68, .26);
+  background: rgba(239, 68, 68, .1);
+  color: #991b1b;
+}
+
+.attendance-day.is-future {
+  opacity: .55;
+}
+
+.calendar-blank {
+  min-height: 64px;
+}
+
+.employee-mini-grid,
+.employee-month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.employee-mini-grid .attendance-day {
+  min-height: 46px;
+  padding: 4px;
+  font-size: 10px;
+}
+
+.employee-mini-grid .attendance-day span {
+  display: none;
+}
+
 .employee-card p,
 .employee-meta {
   color: var(--att-muted);
@@ -318,6 +489,10 @@
   color: var(--att-red);
 }
 
+.tiny-button.ghost {
+  color: var(--att-muted);
+}
+
 .personal-qr {
   display: grid;
   grid-template-columns: 122px 1fr;
@@ -327,6 +502,101 @@
   border-radius: 8px;
   padding: 12px;
   background: #f8fbff;
+}
+
+.attendance-calendar-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: none;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, .52);
+}
+
+.attendance-calendar-modal.is-open {
+  display: grid;
+}
+
+.attendance-calendar-card {
+  position: relative;
+  width: min(1080px, 100%);
+  max-height: 92vh;
+  overflow: auto;
+  border-radius: 8px;
+  padding: 22px;
+  background: #ffffff;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, .28);
+}
+
+.attendance-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--att-line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--att-ink);
+  font-size: 26px;
+  font-weight: 950;
+}
+
+.attendance-calendar-body h3 {
+  margin: 6px 0 4px;
+  font-size: 34px;
+}
+
+.attendance-calendar-body p {
+  margin: 0 0 14px;
+  color: var(--att-muted);
+  font-weight: 760;
+}
+
+.attendance-kicker {
+  color: var(--att-blue);
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.attendance-full-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.attendance-full-legend span {
+  border-radius: 999px;
+  padding: 7px 10px;
+  background: #f1f5f9;
+  color: var(--att-muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.attendance-full-legend .present {
+  background: rgba(18, 149, 87, .14);
+  color: var(--att-green);
+}
+
+.attendance-full-legend .pending {
+  background: rgba(250, 204, 21, .2);
+  color: #854d0e;
+}
+
+.attendance-full-legend .absent {
+  background: rgba(239, 68, 68, .12);
+  color: #991b1b;
+}
+
+.employee-full-months {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .qr-art {
@@ -479,10 +749,11 @@
   .attendance-layout,
   .employee-login-grid,
   .att-form,
-  .att-inline-filter,
-  .employee-directory,
-  .personal-qr,
-  .employee-actions {
-    grid-template-columns: 1fr;
+	  .att-inline-filter,
+	  .employee-directory,
+	  .employee-full-months,
+	  .personal-qr,
+	  .employee-actions {
+	    grid-template-columns: 1fr;
   }
 }

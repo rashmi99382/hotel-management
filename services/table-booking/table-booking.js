@@ -29,12 +29,16 @@ window.smartHotelServices.booking = (() => {
 
   let floorPictures = {};
   let roomPictures = {};
+  let roomStatus = {};
+  let roomDayStatus = {};
+  let roomBookings = [];
   let roomLayoutElements = [];
   let roomStructureImages = {};
   let pendingPoint = null;
   let pendingFloorPictureId = null;
   let pendingRoomPictureId = null;
   let lightbox = null;
+  let adminCalendarModal = null;
   let adminCanvasClickTimer = null;
 
   let tablePricing = [
@@ -55,7 +59,10 @@ window.smartHotelServices.booking = (() => {
     mediaMode: "floor",
     mediaFloorId: "floor-1",
     mediaRoomType: "all",
-    mediaRoomId: "room-ac"
+    mediaRoomId: "room-ac",
+    customerSearch: "",
+    expandedCustomerFloorId: "",
+    expandedCustomerRoomId: ""
   };
 
   restoreCustomerSnapshot();
@@ -97,6 +104,15 @@ window.smartHotelServices.booking = (() => {
       if (stored.roomPictures && typeof stored.roomPictures === "object") {
         roomPictures = stored.roomPictures;
       }
+      if (stored.roomStatus && typeof stored.roomStatus === "object") {
+        roomStatus = stored.roomStatus;
+      }
+      if (stored.roomDayStatus && typeof stored.roomDayStatus === "object") {
+        roomDayStatus = stored.roomDayStatus;
+      }
+      if (Array.isArray(stored.roomBookings)) {
+        roomBookings = stored.roomBookings;
+      }
     } catch {
       // Keep the built-in demo data if shared customer media is unavailable.
     }
@@ -104,13 +120,22 @@ window.smartHotelServices.booking = (() => {
 
   function publishCustomerSnapshot() {
     try {
+      const stored = JSON.parse(localStorage.getItem(PUBLIC_BOOKING_KEY) || "{}");
+      if (Array.isArray(stored.roomBookings) && stored.roomBookings.length) {
+        const merged = new Map();
+        [...stored.roomBookings, ...roomBookings].forEach((booking) => merged.set(booking.id, booking));
+        roomBookings = Array.from(merged.values());
+      }
       localStorage.setItem(PUBLIC_BOOKING_KEY, JSON.stringify({
         version: 1,
         updatedAt: new Date().toISOString(),
         floors,
         rooms,
         floorPictures,
-        roomPictures
+        roomPictures,
+        roomStatus,
+        roomDayStatus,
+        roomBookings
       }));
     } catch {
       // Large local images may exceed storage; the live admin view still keeps them for this session.
@@ -129,6 +154,78 @@ window.smartHotelServices.booking = (() => {
     return roomPictures[roomId] || [];
   }
 
+  function roomControl(roomId) {
+    if (!roomStatus[roomId]) {
+      roomStatus[roomId] = { available: true, note: "" };
+    }
+    return roomStatus[roomId];
+  }
+
+  function roomBookingItems(roomId) {
+    return roomBookings.filter((booking) => booking.roomId === roomId);
+  }
+
+  function addDays(date, days) {
+    const next = new Date(date);
+    next.setDate(next.getDate() + days);
+    return next;
+  }
+
+  function dateISO(date) {
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${date.getFullYear()}-${month}-${day}`;
+  }
+
+  function formatDayLabel(iso) {
+    const date = new Date(`${iso}T00:00:00`);
+    return date.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+  }
+
+  function isDateInsideBooking(iso, booking) {
+    const from = booking.fromDate || booking.date || "";
+    const to = booking.toDate || booking.date || from;
+    return iso >= from && iso <= to;
+  }
+
+  function bookingApproved(booking) {
+    return booking.status === "approved" || booking.status === "booked";
+  }
+
+  function bookingForDate(roomId, day, status) {
+    return roomBookings.find((booking) => {
+      if (booking.roomId !== roomId || !isDateInsideBooking(day, booking)) return false;
+      if (status === "approved") return bookingApproved(booking);
+      if (status === "pending") return booking.status === "pending";
+      return true;
+    });
+  }
+
+  function roomBookingDayStatus(roomId, day) {
+    if (roomDayControl(roomId, day) === "closed") return "closed";
+    if (bookingForDate(roomId, day, "approved")) return "approved";
+    if (bookingForDate(roomId, day, "pending")) return "pending";
+    return "open";
+  }
+
+  function renderRoomCalendar(roomId) {
+    const days = Array.from({ length: 28 }, (_, index) => dateISO(addDays(new Date(), index)));
+    return `
+      <div class="room-calendar" aria-label="Room booking calendar">
+        ${days.map((day) => {
+          const status = roomBookingDayStatus(roomId, day);
+          const label = status === "approved" ? "Booked" : status === "pending" ? "Pending" : status === "closed" ? "Closed" : "Open";
+          return `<span class="is-${status}" title="${label} ${formatDayLabel(day)}">${formatDayLabel(day)}</span>`;
+        }).join("")}
+      </div>
+    `;
+  }
+
+  function roomDayControl(roomId, day) {
+    if (!roomDayStatus[roomId]) roomDayStatus[roomId] = {};
+    return roomDayStatus[roomId][day] || "open";
+  }
+
   function roomTypeOptions(floorId) {
     const types = Array.from(new Set(rooms.filter((room) => room.floorId === floorId).map((room) => room.type)));
     return [{ id: "all", name: "All room types" }, ...types.map((type) => ({ id: type, name: type }))];
@@ -136,6 +233,15 @@ window.smartHotelServices.booking = (() => {
 
   function customerRoomsForSelection() {
     return rooms.filter((room) => room.floorId === selection.floorId && (selection.roomType === "all" || room.type === selection.roomType));
+  }
+
+  function customerVisibleRooms() {
+    const query = selection.customerSearch.trim().toLowerCase();
+    return customerRoomsForSelection().filter((room) => {
+      if (!query) return true;
+      const text = `${room.name} ${room.type} ${floorName(room.floorId)} ${room.price} ${room.maxPeople}`.toLowerCase();
+      return text.includes(query);
+    });
   }
 
   function mediaRoomsForSelection() {
@@ -272,97 +378,136 @@ window.smartHotelServices.booking = (() => {
 
     const dateInput = qs("#customerDate");
     if (dateInput) dateInput.value = selection.date;
+    const searchInput = qs("#customerRoomSearch");
+    if (searchInput) searchInput.value = selection.customerSearch;
   }
 
   function renderFloorRoomList() {
     const list = qs("#floorRoomList");
     if (!list) return;
-    const selectedFloor = floors.find((floor) => floor.id === selection.mediaFloorId) || floors[0];
-    const selectedRoom = rooms.find((room) => room.id === selection.mediaRoomId);
-    const floorPhotoList = floorPhotos(selection.mediaFloorId);
-    const roomPhotoList = roomPhotos(selection.mediaRoomId);
 
     list.innerHTML = `
-      <section class="media-manager">
-        <div class="media-mode-tabs" role="tablist" aria-label="Photo upload type">
-          <button class="media-mode-button ${selection.mediaMode === "floor" ? "is-active" : ""}" type="button" data-media-mode="floor">Floor</button>
-          <button class="media-mode-button ${selection.mediaMode === "room" ? "is-active" : ""}" type="button" data-media-mode="room">Room</button>
+      <section class="admin-media-board">
+        <div class="media-board-heading">
+          <div>
+            <span>Floor Photos</span>
+            <h3>Upload floor pictures directly</h3>
+          </div>
+          <strong>${floors.length} floor${floors.length === 1 ? "" : "s"}</strong>
         </div>
-
-        <div class="media-pane ${selection.mediaMode === "floor" ? "is-active" : ""}">
-          <div class="media-toolbar">
-            <select id="mediaFloorSelect">${selectOptions(floors, selection.mediaFloorId)}</select>
-            <button class="primary-button" type="button" data-upload-floor-picture="${selection.mediaFloorId}" ${floorPhotoList.length >= maxFloorPhotos ? "disabled" : ""}>Add floor photo</button>
-          </div>
-          <div class="media-heading-row">
-            <div>
-              <h3>${escapeBookingHtml(selectedFloor?.name || "Floor")}</h3>
-              <span>${floorPhotoList.length}/${maxFloorPhotos} floor photos</span>
-            </div>
-          </div>
-          <div class="floor-picture-strip media-scroll-row">
-            ${floorPhotoList.map((photo, index) => `
-              <div class="media-thumb-wrap">
-                <button class="floor-picture-thumb" type="button" data-view-floor-picture="${selection.mediaFloorId}" data-floor-picture-index="${index}" aria-label="View ${selectedFloor?.name || "Floor"} photo ${index + 1}">
-                  <img src="${photo.src}" alt="${selectedFloor?.name || "Floor"} photo ${index + 1}" />
-                  <span>Floor pic ${index + 1}</span>
+        <div class="floor-media-grid">
+          ${floors.map((floor) => {
+            const photos = floorPhotos(floor.id);
+            const firstPhoto = photos[0];
+            return `
+              <article class="admin-photo-card">
+                <div class="admin-photo-card-head">
+                  <div>
+                    <h3>${escapeBookingHtml(floor.name)}</h3>
+                    <span>${photos.length}/${maxFloorPhotos} floor photos</span>
+                  </div>
+                  <div class="admin-photo-actions">
+                    <button class="tiny-button" type="button" data-upload-floor-picture="${floor.id}" ${photos.length >= maxFloorPhotos ? "disabled" : ""}>Upload</button>
+                    <button class="tiny-button" type="button" data-view-floor-picture="${floor.id}" data-floor-picture-index="0" ${firstPhoto ? "" : "disabled"}>View img</button>
+                    <button class="tiny-button reject" type="button" data-delete-floor="${floor.id}">×</button>
+                  </div>
+                </div>
+                <button class="admin-photo-preview" type="button" data-view-floor-picture="${floor.id}" data-floor-picture-index="0" ${firstPhoto ? "" : "disabled"}>
+                  ${firstPhoto ? `<img src="${firstPhoto.src}" alt="${escapeBookingHtml(floor.name)} floor photo" />` : `<span>Add ${escapeBookingHtml(floor.name)} photo</span>`}
                 </button>
-                <button class="room-picture-delete" type="button" data-delete-floor-picture="${selection.mediaFloorId}" data-floor-picture-index="${index}" aria-label="Delete floor photo ${index + 1}">×</button>
-              </div>
-            `).join("") || `<div class="floor-picture-empty">No floor picture yet</div>`}
-          </div>
-        </div>
-
-        <div class="media-pane ${selection.mediaMode === "room" ? "is-active" : ""}">
-          <div class="media-toolbar room-media-toolbar">
-            <select id="mediaRoomFloorSelect">${selectOptions(floors, selection.mediaFloorId)}</select>
-            <select id="mediaRoomTypeSelect">${selectOptions(roomTypeOptions(selection.mediaFloorId), selection.mediaRoomType)}</select>
-            <select id="mediaRoomSelect">${selectOptions(mediaRoomsForSelection(), selection.mediaRoomId, roomLabel)}</select>
-            <button class="primary-button" type="button" data-upload-room-picture="${selection.mediaRoomId}" ${roomPhotoList.length >= maxRoomPhotos || !selectedRoom ? "disabled" : ""}>Add room photo</button>
-          </div>
-          <div class="media-heading-row">
-            <div>
-              <h3>${escapeBookingHtml(selectedRoom?.name || "No room selected")}</h3>
-              <span>${selectedRoom ? `${selectedRoom.type} | ${roomPhotoList.length}/${maxRoomPhotos} room photos` : "Add a room first"}</span>
-            </div>
-          </div>
-          <div class="room-picture-strip media-scroll-row">
-            ${roomPhotoList.map((photo, index) => `
-              <div class="room-picture-thumb-wrap">
-                <button class="room-picture-thumb" type="button" data-view-room-picture="${selection.mediaRoomId}" data-room-picture-index="${index}">
-                  <img src="${photo.src}" alt="${selectedRoom?.name || "Room"} photo ${index + 1}" />
-                  <span>Room pic ${index + 1}</span>
-                </button>
-                <button class="room-picture-delete" type="button" data-delete-room-picture="${selection.mediaRoomId}" data-room-picture-index="${index}" aria-label="Delete room photo ${index + 1}">×</button>
-              </div>
-            `).join("") || `<div class="room-picture-empty">No room pics yet</div>`}
-          </div>
+                <div class="room-picture-strip">
+                  ${photos.map((photo, index) => `
+                    <div class="room-picture-thumb-wrap">
+                      <button class="room-picture-thumb" type="button" data-view-floor-picture="${floor.id}" data-floor-picture-index="${index}">
+                        <img src="${photo.src}" alt="${escapeBookingHtml(floor.name)} photo ${index + 1}" />
+                        <span>Floor pic ${index + 1}</span>
+                      </button>
+                      <button class="room-picture-delete" type="button" data-delete-floor-picture="${floor.id}" data-floor-picture-index="${index}" aria-label="Delete floor photo ${index + 1}">×</button>
+                    </div>
+                  `).join("") || `<div class="room-picture-empty">No floor photo yet</div>`}
+                </div>
+              </article>
+            `;
+          }).join("")}
         </div>
       </section>
 
-      <section class="floor-room-summary">
-        ${floors.map((floor) => {
-          const floorRooms = rooms.filter((room) => room.floorId === floor.id);
-          return `
-            <article class="floor-card compact-floor-card">
-              <div class="floor-card-heading">
-                <div>
-                  <h3>${escapeBookingHtml(floor.name)}</h3>
-                  <span>${floorPhotos(floor.id).length}/${maxFloorPhotos} floor photos | ${floorRooms.length} room${floorRooms.length === 1 ? "" : "s"}</span>
-                </div>
-              </div>
-              <div class="room-chip-grid">
-                ${floorRooms.map((room) => `
-                  <div class="room-chip compact-room-chip">
-                    <strong>${escapeBookingHtml(room.name)}</strong>
-                    <span>${room.type} | ${roomPhotos(room.id).length}/${maxRoomPhotos} room photos</span>
-                    <span>Max ${room.maxPeople} people | ${room.openTime}-${room.closeTime}</span>
+      <section class="admin-media-board">
+        <div class="media-board-heading">
+          <div>
+            <span>Room Photos & Booking Control</span>
+            <h3>Add room pictures beside each room</h3>
+          </div>
+          <strong>${rooms.length} room${rooms.length === 1 ? "" : "s"}</strong>
+        </div>
+        <div class="admin-room-photo-grid">
+          ${rooms.map((room) => {
+            const photos = roomPhotos(room.id);
+            const firstPhoto = photos[0];
+            const control = roomControl(room.id);
+            const floor = floors.find((item) => item.id === room.floorId);
+            const bookingsForRoom = roomBookingItems(room.id);
+            return `
+              <article class="admin-photo-card room-control-card">
+                <div class="admin-photo-card-head">
+                  <div>
+                    <h3>${escapeBookingHtml(room.name)}</h3>
+                    <span>${escapeBookingHtml(floor?.name || "Floor")} | ${escapeBookingHtml(room.type)} | ₹${room.price}</span>
                   </div>
-                `).join("") || "<span>No rooms yet.</span>"}
-              </div>
-            </article>
-          `;
-        }).join("")}
+                  <div class="admin-photo-actions">
+                    <button class="tiny-button" type="button" data-upload-room-picture="${room.id}" ${photos.length >= maxRoomPhotos ? "disabled" : ""}>Upload</button>
+                    <button class="tiny-button" type="button" data-view-room-picture="${room.id}" data-room-picture-index="0" ${firstPhoto ? "" : "disabled"}>View img</button>
+                    <button class="tiny-button" type="button" data-open-admin-room-calendar="${room.id}">Calendar</button>
+                    <button class="tiny-button reject" type="button" data-delete-room="${room.id}">×</button>
+                  </div>
+                </div>
+                <button class="admin-photo-preview" type="button" data-view-room-picture="${room.id}" data-room-picture-index="0" ${firstPhoto ? "" : "disabled"}>
+                  ${firstPhoto ? `<img src="${firstPhoto.src}" alt="${escapeBookingHtml(room.name)} room photo" />` : `<span>Add ${escapeBookingHtml(room.name)} photo</span>`}
+                </button>
+                <div class="room-availability-bar">
+                  <button class="${control.available ? "is-active" : ""}" type="button" data-room-availability="${room.id}" data-room-available="true">Available</button>
+                  <button class="${!control.available ? "is-active danger" : ""}" type="button" data-room-availability="${room.id}" data-room-available="false">Not available</button>
+                </div>
+                <label class="room-note-label">
+                  <span>Admin room note</span>
+                  <textarea data-room-note="${room.id}" placeholder="Example: Room repainting today, available after 6PM">${escapeBookingHtml(control.note || "")}</textarea>
+                </label>
+                <div class="room-booking-mini-list">
+                  ${bookingsForRoom.map((booking) => {
+                    const approved = bookingApproved(booking);
+                    const statusLabel = approved ? "Booked" : "Pending";
+                    return `
+                    <div class="room-booking-mini-item ${approved ? "is-approved" : "is-pending"}">
+                      <div>
+                        <strong>${statusLabel}: ${escapeBookingHtml(booking.name || "Guest")}</strong>
+                        <span>${escapeBookingHtml(booking.mobile || "No mobile")} | ${booking.fromDate || booking.date} to ${booking.toDate || booking.date}</span>
+                        ${approved && booking.securityCode ? `<em>Security code: ${escapeBookingHtml(booking.securityCode)}</em>` : ""}
+                      </div>
+                      ${approved ? "" : `
+                        <div class="room-booking-approve">
+                          <input class="booking-code-input" data-booking-code-input="${escapeBookingHtml(booking.id)}" placeholder="Security code" />
+                          <button class="tiny-button" type="button" data-confirm-room-booking="${escapeBookingHtml(booking.id)}">Confirm</button>
+                        </div>
+                      `}
+                    </div>
+                  `;
+                  }).join("") || `<span>No room bookings yet</span>`}
+                </div>
+                <div class="room-picture-strip">
+                  ${photos.map((photo, index) => `
+                    <div class="room-picture-thumb-wrap">
+                      <button class="room-picture-thumb" type="button" data-view-room-picture="${room.id}" data-room-picture-index="${index}">
+                        <img src="${photo.src}" alt="${escapeBookingHtml(room.name)} photo ${index + 1}" />
+                        <span>Room pic ${index + 1}</span>
+                      </button>
+                      <button class="room-picture-delete" type="button" data-delete-room-picture="${room.id}" data-room-picture-index="${index}" aria-label="Delete room photo ${index + 1}">×</button>
+                    </div>
+                  `).join("") || `<div class="room-picture-empty">No room pics yet</div>`}
+                </div>
+              </article>
+            `;
+          }).join("") || `<article class="admin-photo-card"><strong>No room yet</strong><span>Add a room first.</span></article>`}
+        </div>
       </section>
     `;
   }
@@ -529,39 +674,79 @@ window.smartHotelServices.booking = (() => {
     const gallery = qs("#customerFloorGallery");
     if (!gallery) return;
     const photos = floorPhotos(selection.floorId);
+    const firstPhoto = photos[0];
+    const expanded = selection.expandedCustomerFloorId === selection.floorId;
     gallery.innerHTML = `
       <div class="customer-gallery-heading">
-        <strong>${floorName(selection.floorId)} floor pictures</strong>
-        <span>${photos.length ? "Tap any floor picture to view it fullscreen." : "No floor pictures uploaded by admin yet."}</span>
+        <div>
+          <strong>${floorName(selection.floorId)} floor pictures</strong>
+          <span>${photos.length ? "First picture is shown directly. Use View all for the rest." : "No floor pictures uploaded by admin yet."}</span>
+        </div>
+        <button class="tiny-button" type="button" data-toggle-customer-floor-gallery="${selection.floorId}" ${photos.length > 1 ? "" : "disabled"}>${expanded ? "Hide all" : "View all"}</button>
       </div>
-      <div class="customer-floor-strip">
-        ${photos.map((photo, index) => `
-          <button class="customer-floor-thumb" type="button" data-view-customer-floor-picture="${selection.floorId}" data-floor-picture-index="${index}">
-            <img src="${photo.src}" alt="${floorName(selection.floorId)} floor photo ${index + 1}" />
-            <span>Floor pic ${index + 1}</span>
-          </button>
-        `).join("") || `<div class="floor-picture-empty">Upload floor pictures from admin to show them here.</div>`}
-      </div>
+      ${firstPhoto ? `
+        <button class="customer-feature-photo" type="button" data-view-customer-floor-picture="${selection.floorId}" data-floor-picture-index="0">
+          <img src="${firstPhoto.src}" alt="${floorName(selection.floorId)} floor photo" />
+          <span>${floorName(selection.floorId)} main floor photo</span>
+        </button>
+      ` : `<div class="floor-picture-empty">Upload floor pictures from admin to show them here.</div>`}
+      ${expanded ? `
+        <div class="customer-floor-strip">
+          ${photos.map((photo, index) => `
+            <button class="customer-floor-thumb" type="button" data-view-customer-floor-picture="${selection.floorId}" data-floor-picture-index="${index}">
+              <img src="${photo.src}" alt="${floorName(selection.floorId)} floor photo ${index + 1}" />
+              <span>Floor pic ${index + 1}</span>
+            </button>
+          `).join("")}
+        </div>
+      ` : ""}
     `;
   }
 
   function renderCustomerRoomGallery() {
     const gallery = qs("#customerRoomGallery");
     if (!gallery) return;
-    const room = rooms.find((item) => item.id === selection.roomId);
-    const photos = roomPhotos(selection.roomId);
+    const visibleRooms = customerVisibleRooms();
     gallery.innerHTML = `
       <div class="customer-gallery-heading">
-        <strong>${room?.name || "Room"} photos</strong>
-        <span>${photos.length ? "Tap a room photo to view it fullscreen." : "No room photos uploaded by admin yet."}</span>
+        <div>
+          <strong>Room photos</strong>
+          <span>${visibleRooms.length ? "Every room shows the first photo directly. Open View images for more." : "No matching rooms found."}</span>
+        </div>
+        <strong>${visibleRooms.length} result${visibleRooms.length === 1 ? "" : "s"}</strong>
       </div>
-      <div class="customer-floor-strip">
-        ${photos.map((photo, index) => `
-          <button class="customer-floor-thumb" type="button" data-view-customer-room-picture="${selection.roomId}" data-room-picture-index="${index}">
-            <img src="${photo.src}" alt="${room?.name || "Room"} photo ${index + 1}" />
-            <span>Room pic ${index + 1}</span>
-          </button>
-        `).join("") || `<div class="floor-picture-empty">Upload room pictures from admin to show them here.</div>`}
+      <div class="customer-room-card-grid">
+        ${visibleRooms.map((room) => {
+          const photos = roomPhotos(room.id);
+          const firstPhoto = photos[0];
+          const expanded = selection.expandedCustomerRoomId === room.id;
+          const control = roomControl(room.id);
+          return `
+            <article class="customer-room-card">
+              <button class="customer-room-main-photo" type="button" data-view-customer-room-picture="${room.id}" data-room-picture-index="0" ${firstPhoto ? "" : "disabled"}>
+                ${firstPhoto ? `<img src="${firstPhoto.src}" alt="${escapeBookingHtml(room.name)} photo" />` : `<span>No room photo</span>`}
+              </button>
+              <div class="customer-room-card-body">
+                <div>
+                  <h3>${escapeBookingHtml(room.name)}</h3>
+                  <span>${escapeBookingHtml(floorName(room.floorId))} | ${escapeBookingHtml(room.type)} | ₹${room.price}</span>
+                  ${control.note ? `<p>${escapeBookingHtml(control.note)}</p>` : ""}
+                </div>
+                <button class="tiny-button" type="button" data-toggle-customer-room-gallery="${room.id}" ${photos.length > 1 ? "" : firstPhoto ? "" : "disabled"}>${expanded ? "Hide images" : "View images"}</button>
+              </div>
+              ${expanded ? `
+                <div class="customer-floor-strip">
+                  ${photos.map((photo, index) => `
+                    <button class="customer-floor-thumb" type="button" data-view-customer-room-picture="${room.id}" data-room-picture-index="${index}">
+                      <img src="${photo.src}" alt="${escapeBookingHtml(room.name)} photo ${index + 1}" />
+                      <span>Room pic ${index + 1}</span>
+                    </button>
+                  `).join("") || `<div class="room-picture-empty">No room pics yet</div>`}
+                </div>
+              ` : ""}
+            </article>
+          `;
+        }).join("") || `<div class="floor-picture-empty">Try another floor, room type or search text.</div>`}
       </div>
     `;
   }
@@ -726,6 +911,60 @@ window.smartHotelServices.booking = (() => {
     lightbox.classList.add("is-open");
   }
 
+  function openAdminRoomCalendar(roomId) {
+    const room = rooms.find((item) => item.id === roomId);
+    if (!room) return;
+    if (!adminCalendarModal) {
+      adminCalendarModal = document.createElement("div");
+      adminCalendarModal.className = "photo-lightbox admin-calendar-modal";
+      adminCalendarModal.innerHTML = `
+        <div class="admin-calendar-card">
+          <button class="photo-lightbox-close" type="button" aria-label="Close calendar">×</button>
+          <div class="admin-calendar-body"></div>
+        </div>
+      `;
+      document.body.append(adminCalendarModal);
+      adminCalendarModal.addEventListener("click", (event) => {
+        if (event.target === adminCalendarModal || event.target.closest(".photo-lightbox-close")) {
+          adminCalendarModal.classList.remove("is-open");
+        }
+        const dayButton = event.target.closest("[data-admin-calendar-day]");
+        if (dayButton) {
+          const day = dayButton.dataset.adminCalendarDay;
+          const id = dayButton.dataset.adminCalendarRoom;
+          const bookingStatus = roomBookingDayStatus(id, day);
+          if (bookingStatus === "pending" || bookingStatus === "approved") {
+            alert("This date has a customer booking request. Use the room booking list to review it.");
+            return;
+          }
+          if (!roomDayStatus[id]) roomDayStatus[id] = {};
+          roomDayStatus[id][day] = roomDayStatus[id][day] === "closed" ? "open" : "closed";
+          publishCustomerSnapshot();
+          openAdminRoomCalendar(id);
+        }
+      });
+    }
+    const days = Array.from({ length: 183 }, (_, index) => dateISO(addDays(new Date(), index)));
+    adminCalendarModal.querySelector(".admin-calendar-body").innerHTML = `
+      <span class="room-map-item-type">Admin calendar</span>
+      <h3>${escapeBookingHtml(room.name)}</h3>
+      <p>Click any open date to close it. Yellow means pending customer request, green means confirmed booking, red means admin closed.</p>
+      <div class="admin-room-calendar-grid">
+        ${days.map((day) => {
+          const status = roomBookingDayStatus(roomId, day);
+          const label = status === "approved" ? "Booked" : status === "pending" ? "Pending" : status === "closed" ? "Closed" : "Available";
+          return `
+            <button class="is-${status}" type="button" data-admin-calendar-room="${roomId}" data-admin-calendar-day="${day}">
+              <strong>${formatDayLabel(day)}</strong>
+              <span>${label}</span>
+            </button>
+          `;
+        }).join("")}
+      </div>
+    `;
+    adminCalendarModal.classList.add("is-open");
+  }
+
   function createPhotoPointFromPointer(event, stage) {
     if (!stage) return;
     const canvas = stage.querySelector(".layout-canvas") || stage;
@@ -840,6 +1079,11 @@ window.smartHotelServices.booking = (() => {
       renderBookingModule();
     });
 
+    qs("#customerRoomSearch")?.addEventListener("input", (event) => {
+      selection.customerSearch = event.currentTarget.value;
+      renderCustomerRoomGallery();
+    });
+
     qs("#customerDate")?.addEventListener("change", (event) => {
       selection.date = event.currentTarget.value || todayISO;
       selection.tableId = null;
@@ -893,10 +1137,77 @@ window.smartHotelServices.booking = (() => {
         return;
       }
 
-      const deleteFloorButton = event.target.closest("[data-delete-floor-picture]");
+      const availabilityButton = event.target.closest("[data-room-availability]");
+      if (availabilityButton) {
+        const control = roomControl(availabilityButton.dataset.roomAvailability);
+        control.available = availabilityButton.dataset.roomAvailable === "true";
+        renderBookingModule();
+        return;
+      }
+
+      const adminCalendarButton = event.target.closest("[data-open-admin-room-calendar]");
+      if (adminCalendarButton) {
+        openAdminRoomCalendar(adminCalendarButton.dataset.openAdminRoomCalendar);
+        return;
+      }
+
+      const confirmBookingButton = event.target.closest("[data-confirm-room-booking]");
+      if (confirmBookingButton) {
+        const booking = roomBookings.find((item) => item.id === confirmBookingButton.dataset.confirmRoomBooking);
+        const input = confirmBookingButton.closest(".room-booking-approve")?.querySelector("[data-booking-code-input]");
+        const code = input?.value.trim() || "";
+        if (!booking) return;
+        if (!code) {
+          alert("Write a security code before confirming this booking.");
+          return;
+        }
+        booking.status = "approved";
+        booking.securityCode = code;
+        booking.confirmedAt = new Date().toISOString();
+        renderBookingModule();
+        return;
+      }
+
+      const deleteRoomButton = event.target.closest("[data-delete-room]");
+      if (deleteRoomButton) {
+        const room = rooms.find((item) => item.id === deleteRoomButton.dataset.deleteRoom);
+        if (!room || !confirm(`Delete ${room.name}?`)) return;
+        rooms = rooms.filter((item) => item.id !== room.id);
+        delete roomPictures[room.id];
+        delete roomStatus[room.id];
+        delete roomDayStatus[room.id];
+        roomBookings = roomBookings.filter((booking) => booking.roomId !== room.id);
+        if (selection.roomId === room.id) selection.roomId = firstRoomForFloor(selection.floorId);
+        if (selection.adminRoomId === room.id) selection.adminRoomId = firstRoomForFloor(selection.adminFloorId);
+        renderBookingModule();
+        return;
+      }
+
+      const deleteFloorButton = event.target.closest("[data-delete-floor]");
       if (deleteFloorButton) {
-        const floorId = deleteFloorButton.dataset.deleteFloorPicture;
-        const index = Number(deleteFloorButton.dataset.floorPictureIndex);
+        const floor = floors.find((item) => item.id === deleteFloorButton.dataset.deleteFloor);
+        if (!floor || !confirm(`Delete ${floor.name} and its rooms?`)) return;
+        const roomIds = rooms.filter((room) => room.floorId === floor.id).map((room) => room.id);
+        floors = floors.filter((item) => item.id !== floor.id);
+        rooms = rooms.filter((room) => room.floorId !== floor.id);
+        delete floorPictures[floor.id];
+        roomIds.forEach((roomId) => {
+          delete roomPictures[roomId];
+          delete roomStatus[roomId];
+          delete roomDayStatus[roomId];
+        });
+        roomBookings = roomBookings.filter((booking) => !roomIds.includes(booking.roomId));
+        selection.floorId = floors[0]?.id || "";
+        selection.adminFloorId = selection.floorId;
+        selection.mediaFloorId = selection.floorId;
+        renderBookingModule();
+        return;
+      }
+
+      const deleteFloorPictureButton = event.target.closest("[data-delete-floor-picture]");
+      if (deleteFloorPictureButton) {
+        const floorId = deleteFloorPictureButton.dataset.deleteFloorPicture;
+        const index = Number(deleteFloorPictureButton.dataset.floorPictureIndex);
         const list = floorPhotos(floorId);
         if (!list[index] || !confirm(`Delete floor photo ${index + 1}?`)) return;
         floorPictures[floorId] = list.filter((_, photoIndex) => photoIndex !== index);
@@ -904,10 +1215,10 @@ window.smartHotelServices.booking = (() => {
         return;
       }
 
-      const deleteRoomButton = event.target.closest("[data-delete-room-picture]");
-      if (deleteRoomButton) {
-        const roomId = deleteRoomButton.dataset.deleteRoomPicture;
-        const index = Number(deleteRoomButton.dataset.roomPictureIndex);
+      const deleteRoomPictureButton = event.target.closest("[data-delete-room-picture]");
+      if (deleteRoomPictureButton) {
+        const roomId = deleteRoomPictureButton.dataset.deleteRoomPicture;
+        const index = Number(deleteRoomPictureButton.dataset.roomPictureIndex);
         const list = roomPhotos(roomId);
         if (!list[index] || !confirm(`Delete room photo ${index + 1}?`)) return;
         roomPictures[roomId] = list.filter((_, photoIndex) => photoIndex !== index);
@@ -993,6 +1304,14 @@ window.smartHotelServices.booking = (() => {
         selection.mediaMode = "room";
         renderBookingModule();
       }
+    });
+
+    qs("#floorRoomList")?.addEventListener("input", (event) => {
+      const noteInput = event.target.closest("[data-room-note]");
+      if (!noteInput) return;
+      const control = roomControl(noteInput.dataset.roomNote);
+      control.note = noteInput.value;
+      publishCustomerSnapshot();
     });
 
     qs("#floorPictureInput")?.addEventListener("change", (event) => {
@@ -1122,6 +1441,13 @@ window.smartHotelServices.booking = (() => {
     });
 
     qs("#customerFloorGallery")?.addEventListener("click", (event) => {
+      const toggleButton = event.target.closest("[data-toggle-customer-floor-gallery]");
+      if (toggleButton) {
+        selection.expandedCustomerFloorId = selection.expandedCustomerFloorId === toggleButton.dataset.toggleCustomerFloorGallery ? "" : toggleButton.dataset.toggleCustomerFloorGallery;
+        renderCustomerFloorGallery();
+        return;
+      }
+
       const viewButton = event.target.closest("[data-view-customer-floor-picture]");
       if (!viewButton) return;
       const photo = floorPhotos(viewButton.dataset.viewCustomerFloorPicture)[Number(viewButton.dataset.floorPictureIndex)];
@@ -1129,6 +1455,13 @@ window.smartHotelServices.booking = (() => {
     });
 
     qs("#customerRoomGallery")?.addEventListener("click", (event) => {
+      const toggleButton = event.target.closest("[data-toggle-customer-room-gallery]");
+      if (toggleButton) {
+        selection.expandedCustomerRoomId = selection.expandedCustomerRoomId === toggleButton.dataset.toggleCustomerRoomGallery ? "" : toggleButton.dataset.toggleCustomerRoomGallery;
+        renderCustomerRoomGallery();
+        return;
+      }
+
       const viewButton = event.target.closest("[data-view-customer-room-picture]");
       if (!viewButton) return;
       const roomId = viewButton.dataset.viewCustomerRoomPicture;

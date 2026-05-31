@@ -2,6 +2,7 @@ window.smartHotelServices = window.smartHotelServices || {};
 
 window.smartHotelServices.attendance = (() => {
   const STORAGE_KEY = "smartAttendanceSystemState";
+  const SIX_MONTH_DAYS = 183;
   let root = null;
   let state = loadState();
   let activeView = "admin";
@@ -9,6 +10,7 @@ window.smartHotelServices.attendance = (() => {
   let roleFilter = "All";
   let currentEmployeeId = "";
   let currentReviewer = { type: "admin", name: "Admin" };
+  let attendanceCalendarModal = null;
 
   function uid(prefix) {
     return `${prefix}-${Math.random().toString(16).slice(2, 8)}${Date.now().toString(16).slice(-4)}`;
@@ -16,9 +18,13 @@ window.smartHotelServices.attendance = (() => {
 
   function todayKey() {
     const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const day = String(now.getDate()).padStart(2, "0");
+    return dateKey(now);
+  }
+
+  function dateKey(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   }
 
@@ -56,6 +62,7 @@ window.smartHotelServices.attendance = (() => {
       shift,
       qrId: uid("qr"),
       active: true,
+      salaryCredited: false,
       createdAt: dateTimeNow(),
       lastLoginAt: ""
     };
@@ -66,12 +73,16 @@ window.smartHotelServices.attendance = (() => {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (!stored) return defaultState();
       const parsed = JSON.parse(stored);
+      const cutoff = Date.now() - (1000 * 60 * 60 * 24 * SIX_MONTH_DAYS);
+      const attendance = Array.isArray(parsed.attendance)
+        ? parsed.attendance.filter((record) => new Date(`${record.date}T00:00:00`).getTime() >= cutoff)
+        : [];
       return {
         ...defaultState(),
         ...parsed,
         employees: Array.isArray(parsed.employees) ? parsed.employees : [],
         subAdmins: Array.isArray(parsed.subAdmins) ? parsed.subAdmins : [],
-        attendance: Array.isArray(parsed.attendance) ? parsed.attendance : [],
+        attendance,
         activity: Array.isArray(parsed.activity) ? parsed.activity : []
       };
     } catch {
@@ -138,13 +149,82 @@ window.smartHotelServices.attendance = (() => {
     return todayRecords().find((record) => record.employeeId === employeeId);
   }
 
+  function recordForEmployeeDate(employeeId, iso) {
+    return state.attendance.find((record) => record.employeeId === employeeId && record.date === iso);
+  }
+
+  function monthStarts(count = 6) {
+    const current = new Date();
+    current.setDate(1);
+    current.setHours(0, 0, 0, 0);
+    return Array.from({ length: count }, (_, index) => {
+      const month = new Date(current);
+      month.setMonth(current.getMonth() - index);
+      return month;
+    });
+  }
+
+  function daysInMonth(monthStart) {
+    const year = monthStart.getFullYear();
+    const month = monthStart.getMonth();
+    const total = new Date(year, month + 1, 0).getDate();
+    return Array.from({ length: total }, (_, index) => dateKey(new Date(year, month, index + 1)));
+  }
+
+  function monthTitle(monthStart) {
+    return monthStart.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+  }
+
+  function employeeDateState(employeeId, iso) {
+    if (iso > todayKey()) return "future";
+    const record = recordForEmployeeDate(employeeId, iso);
+    if (!record) return "absent";
+    if (!record.reviewed) return "pending";
+    return record.status === "present" ? "present" : "absent";
+  }
+
+  function attendanceDayLabel(stateName, record) {
+    if (stateName === "future") return "Future";
+    if (stateName === "pending") return "Pending";
+    if (stateName === "present") return "Present";
+    return record?.reviewed ? "Rejected" : "Absent";
+  }
+
+  function renderMonthCalendar(employee, monthStart, compact = false) {
+    const days = daysInMonth(monthStart);
+    const blanks = new Date(monthStart.getFullYear(), monthStart.getMonth(), 1).getDay();
+    return `
+      <section class="${compact ? "employee-mini-month" : "employee-month-card"}">
+        <div class="employee-month-head">
+          <strong>${monthTitle(monthStart)}</strong>
+          ${compact ? `<button class="tiny-button" type="button" data-open-employee-calendar="${employee.id}">Full view</button>` : ""}
+        </div>
+        <div class="${compact ? "employee-mini-grid" : "employee-month-grid"}">
+          ${Array.from({ length: blanks }, () => `<span class="calendar-blank"></span>`).join("")}
+          ${days.map((day) => {
+            const record = recordForEmployeeDate(employee.id, day);
+            const stateName = employeeDateState(employee.id, day);
+            const pendingAction = !compact && record && !record.reviewed ? `data-review-record="${record.id}" title="Approve ${day}"` : "";
+            const openAction = compact ? `data-open-employee-calendar="${employee.id}"` : pendingAction;
+            return `
+              <button class="attendance-day is-${stateName}" type="button" ${openAction}>
+                <strong>${Number(day.slice(-2))}</strong>
+                <span>${attendanceDayLabel(stateName, record)}</span>
+              </button>
+            `;
+          }).join("")}
+        </div>
+      </section>
+    `;
+  }
+
   function attendancePercent() {
     if (!state.employees.length) return 0;
     return Math.round((todayRecords().filter((record) => record.status === "present").length / state.employees.length) * 100);
   }
 
   function pendingRecords() {
-    return todayRecords().filter((record) => !record.reviewed);
+    return state.attendance.filter((record) => !record.reviewed);
   }
 
   function reviewedPercent() {
@@ -230,8 +310,10 @@ window.smartHotelServices.attendance = (() => {
               <span class="status-pill ${reviewClass}">${record?.reviewed ? "Reviewed" : record ? "Review pending" : "No record"}</span>
             </div>
           </div>
+          ${renderMonthCalendar(employee, monthStarts(1)[0], true)}
           <div class="employee-actions">
             <button class="tiny-button" type="button" data-login-fill="${employee.id}">Use login</button>
+            <button class="tiny-button ${employee.salaryCredited ? "" : "ghost"}" type="button" data-toggle-salary="${employee.id}">${employee.salaryCredited ? "Salary credited" : "Credit salary"}</button>
             <button class="tiny-button danger" type="button" data-delete-employee="${employee.id}">Remove</button>
           </div>
         </article>
@@ -259,7 +341,7 @@ window.smartHotelServices.attendance = (() => {
         <article class="review-item">
           <div>
             <h4>${escapeHtml(employee?.name || "Unknown employee")}</h4>
-            <p>${escapeHtml(employee?.role || "")} | ${escapeHtml(record.time)} | Method: ${escapeHtml(record.method)}</p>
+            <p>${escapeHtml(employee?.role || "")} | ${escapeHtml(record.date)} ${escapeHtml(record.time)} | Method: ${escapeHtml(record.method)}</p>
           </div>
           <div class="review-actions">
             <button class="tiny-button" type="button" data-review-record="${record.id}">Approve</button>
@@ -341,6 +423,48 @@ window.smartHotelServices.attendance = (() => {
       <p class="completion-note">${progress === 100 ? "100% attendance review complete." : `${pendingRecords().length} attendance records still need review.`}</p>
       <button class="primary-button" type="button" data-review-all ${pendingRecords().length ? "" : "disabled"}>Approve all pending</button>
     `;
+  }
+
+  function openEmployeeAttendanceCalendar(employeeId) {
+    const employee = employeeById(employeeId);
+    if (!employee) return;
+    if (!attendanceCalendarModal) {
+      attendanceCalendarModal = document.createElement("div");
+      attendanceCalendarModal.className = "attendance-calendar-modal";
+      attendanceCalendarModal.innerHTML = `
+        <div class="attendance-calendar-card">
+          <button class="attendance-modal-close" type="button" aria-label="Close attendance calendar">×</button>
+          <div class="attendance-calendar-body"></div>
+        </div>
+      `;
+      document.body.append(attendanceCalendarModal);
+      attendanceCalendarModal.addEventListener("click", (event) => {
+        if (event.target === attendanceCalendarModal || event.target.closest(".attendance-modal-close")) {
+          attendanceCalendarModal.classList.remove("is-open");
+          return;
+        }
+        const reviewButton = event.target.closest("[data-review-record]");
+        if (reviewButton) {
+          reviewRecord(reviewButton.dataset.reviewRecord, true);
+          openEmployeeAttendanceCalendar(attendanceCalendarModal.dataset.employeeId);
+        }
+      });
+    }
+    attendanceCalendarModal.dataset.employeeId = employeeId;
+    attendanceCalendarModal.querySelector(".attendance-calendar-body").innerHTML = `
+      <span class="attendance-kicker">Six-month attendance</span>
+      <h3>${escapeHtml(employee.name)}</h3>
+      <p>${escapeHtml(employee.role)} | User ID: ${escapeHtml(employee.userId)} | ${employee.salaryCredited ? "Salary credited" : "Salary not credited"}</p>
+      <div class="attendance-full-legend">
+        <span class="present">Present</span>
+        <span class="pending">Pending</span>
+        <span class="absent">Absent</span>
+      </div>
+      <div class="employee-full-months">
+        ${monthStarts(6).map((month) => renderMonthCalendar(employee, month)).join("")}
+      </div>
+    `;
+    attendanceCalendarModal.classList.add("is-open");
   }
 
   function renderAll() {
@@ -522,6 +646,22 @@ window.smartHotelServices.attendance = (() => {
       renderAll();
       qs("#employeeLoginForm").elements.userId.value = employee.userId;
       qs("#employeeLoginForm").elements.password.value = employee.password;
+    }
+
+    const openEmployeeCalendar = event.target.closest("[data-open-employee-calendar]");
+    if (openEmployeeCalendar) {
+      openEmployeeAttendanceCalendar(openEmployeeCalendar.dataset.openEmployeeCalendar);
+      return;
+    }
+
+    const salaryButton = event.target.closest("[data-toggle-salary]");
+    if (salaryButton) {
+      const employee = employeeById(salaryButton.dataset.toggleSalary);
+      if (!employee) return;
+      employee.salaryCredited = !employee.salaryCredited;
+      saveState();
+      renderAll();
+      return;
     }
 
     const deleteEmployee = event.target.closest("[data-delete-employee]");

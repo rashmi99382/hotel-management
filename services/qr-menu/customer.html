@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>QR Menu</title>
     <link rel="stylesheet" href="../../style.css" />
-    <link rel="stylesheet" href="qr-menu.css?v=qr-customer-work-v1" />
-    <script defer src="customer.js?v=qr-customer-work-v1"></script>
+    <link rel="stylesheet" href="qr-menu.css?v=qr-pdf-work-v2" />
+    <script defer src="customer.js?v=qr-pdf-work-v2"></script>
   </head>
   <body>
     <main class="qr-customer-page">
@@ -39,6 +39,7 @@
             <select id="scanCategory" aria-label="Food category"></select>
           </div>
           <div id="scanCategoryRail" class="scan-category-rail"></div>
+          <div id="scanBillPanel" class="scan-bill-panel"></div>
           <div id="scanCategorySections" class="scan-category-sections"></div>
         </section>
 
@@ -50,6 +51,13 @@
           <div id="scanHotelGallery" class="scan-hotel-gallery"></div>
         </section>
       </section>
+
+      <div id="scanRoomBookingModal" class="qr-modal is-hidden" role="dialog" aria-modal="true">
+        <div class="qr-modal-card room-booking-modal-card">
+          <button class="modal-close" type="button" data-close-room-booking>&times;</button>
+          <div id="scanRoomBookingBody"></div>
+        </div>
+      </div>
 
       <div id="scanMediaModal" class="qr-modal is-hidden" role="dialog" aria-modal="true">
         <div class="qr-modal-card">
