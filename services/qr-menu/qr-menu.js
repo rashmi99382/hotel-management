@@ -480,6 +480,16 @@ window.smartHotelServices.menu = (() => {
     qs("#themeToggleButton").textContent = state.settings.theme === "dark" ? "Light theme" : "Dark theme";
   }
 
+  function openCustomerPreview() {
+    qs("#customerExperiencePanel").classList.remove("is-hidden");
+    qs("#customerPreviewFab").setAttribute("aria-expanded", "true");
+  }
+
+  function closeCustomerPreview() {
+    qs("#customerExperiencePanel").classList.add("is-hidden");
+    qs("#customerPreviewFab").setAttribute("aria-expanded", "false");
+  }
+
   function renderAll() {
     renderTheme();
     renderAnalytics();
@@ -775,6 +785,9 @@ window.smartHotelServices.menu = (() => {
       saveState();
       renderTheme();
     });
+
+    qs("#customerPreviewFab").addEventListener("click", openCustomerPreview);
+    qs("#closeCustomerPreviewButton").addEventListener("click", closeCustomerPreview);
 
     root.addEventListener("click", (event) => {
       const categoryButton = event.target.closest("[data-filter-category]");

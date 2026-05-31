@@ -2,6 +2,7 @@ window.smartHotelServices = window.smartHotelServices || {};
 
 window.smartHotelServices.billing = (() => {
   const STORAGE_KEY = "smartBillingQrTransferState";
+  const BILL_SETTINGS_KEY = "smartBillDownloadSettings";
 
   let root = null;
   let state = loadState();
@@ -18,6 +19,36 @@ window.smartHotelServices.billing = (() => {
   function todayKey() {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  }
+
+  function defaultBillSettings() {
+    return {
+      password: "",
+      passwordDate: todayKey(),
+      passwordSavedAt: "",
+      title: "Tax Invoice",
+      accent: "#2563eb",
+      layout: "classic",
+      watermark: "SMART HOTEL",
+      footer: "Thank you for dining with us."
+    };
+  }
+
+  function loadBillSettings() {
+    try {
+      return { ...defaultBillSettings(), ...(JSON.parse(localStorage.getItem(BILL_SETTINGS_KEY) || "{}")) };
+    } catch {
+      return defaultBillSettings();
+    }
+  }
+
+  function cleanAccent(value) {
+    const color = String(value || "").trim();
+    return /^#[0-9a-f]{6}$/i.test(color) ? color : "#2563eb";
+  }
+
+  function hasActiveSecurityCode(settings) {
+    return Boolean(settings.password && settings.passwordSavedAt);
   }
 
   function timeNow() {
@@ -220,7 +251,16 @@ window.smartHotelServices.billing = (() => {
     return lines.join("\n");
   }
 
-  function billHtml(bill) {
+  function billHtml(bill, options = {}) {
+    const settings = loadBillSettings();
+    const accent = cleanAccent(settings.accent);
+    const layout = ["classic", "compact", "premium"].includes(settings.layout) ? settings.layout : "classic";
+    const logo = bill.hotel.logo
+      ? `<img src="${escapeHtml(bill.hotel.logo)}" alt="${escapeHtml(bill.hotel.hotelName)} logo" />`
+      : `<span>${escapeHtml(initials(bill.hotel.hotelName))}</span>`;
+    const upiQr = bill.hotel.upiQr
+      ? `<img src="${escapeHtml(bill.hotel.upiQr)}" alt="UPI QR Code" />`
+      : "";
     const rows = bill.items.map((item) => `
       <tr>
         <td>${escapeHtml(item.name)}</td>
@@ -230,37 +270,80 @@ window.smartHotelServices.billing = (() => {
         <td>${money(item.total)}</td>
       </tr>
     `).join("");
+    const watermark = settings.watermark ? `<div class="watermark">${escapeHtml(settings.watermark)}</div>` : "";
     return `<!doctype html>
       <html>
         <head>
           <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
           <title>${escapeHtml(bill.billNo)}</title>
           <style>
-            body { font-family: Arial, sans-serif; color: #111827; padding: 28px; }
-            h1, h2, p { margin: 0 0 8px; }
-            .top { display: flex; justify-content: space-between; gap: 20px; border-bottom: 2px solid #111827; padding-bottom: 16px; margin-bottom: 18px; }
-            table { width: 100%; border-collapse: collapse; margin: 18px 0; }
-            th, td { border: 1px solid #dbe5ef; padding: 10px; text-align: left; }
-            th { background: #f6f9fc; }
-            .total { max-width: 360px; margin-left: auto; display: grid; gap: 8px; }
-            .row { display: flex; justify-content: space-between; }
-            .final { font-size: 22px; font-weight: 800; }
+            * { box-sizing: border-box; }
+            body { margin: 0; background: #eef3f9; color: #111827; font-family: Arial, sans-serif; }
+            h1, h2, h3, p { margin: 0; }
+            .invoice-shell { position: relative; width: min(920px, calc(100vw - 28px)); margin: 22px auto; overflow: hidden; border-radius: 8px; background: #ffffff; box-shadow: 0 24px 70px rgba(15, 23, 42, .16); }
+            .invoice-hero { display: grid; grid-template-columns: 1fr auto; gap: 20px; padding: 28px; background: linear-gradient(135deg, ${accent}, #111827); color: #ffffff; }
+            .brand-line { display: flex; gap: 16px; align-items: center; }
+            .brand-mark { display: grid; place-items: center; width: 70px; height: 70px; overflow: hidden; border-radius: 8px; background: rgba(255, 255, 255, .16); font-size: 24px; font-weight: 900; }
+            .brand-mark img { width: 100%; height: 100%; object-fit: cover; }
+            .invoice-title { text-align: right; }
+            .invoice-title strong { display: block; margin-bottom: 8px; font-size: 13px; text-transform: uppercase; }
+            .invoice-body { position: relative; display: grid; gap: 20px; padding: 26px; }
+            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+            .info-card { border: 1px solid #dbe5ef; border-radius: 8px; padding: 14px; background: #f8fafc; }
+            .info-card span { display: block; color: #64748b; font-size: 12px; font-weight: 800; text-transform: uppercase; }
+            .info-card strong { display: block; margin-top: 4px; font-size: 18px; }
+            table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 8px; }
+            th, td { border-bottom: 1px solid #e2e8f0; padding: 12px; text-align: left; }
+            th { background: #f1f5f9; color: #475569; font-size: 12px; text-transform: uppercase; }
+            .total { width: min(380px, 100%); margin-left: auto; display: grid; gap: 8px; border: 1px solid #dbe5ef; border-radius: 8px; padding: 14px; background: #ffffff; }
+            .row { display: flex; justify-content: space-between; gap: 12px; }
+            .final { border-top: 1px solid #dbe5ef; padding-top: 10px; color: ${accent}; font-size: 22px; font-weight: 900; }
+            .upi-box { display: flex; justify-content: space-between; gap: 16px; align-items: center; border: 1px dashed ${accent}; border-radius: 8px; padding: 14px; background: rgba(37, 99, 235, .04); }
+            .upi-box img { width: 96px; height: 96px; object-fit: contain; }
+            .footer { border-top: 1px solid #dbe5ef; padding: 18px 26px; color: #64748b; font-weight: 700; }
+            .watermark { position: absolute; right: 34px; bottom: 44px; color: rgba(15, 23, 42, .05); font-size: 72px; font-weight: 900; transform: rotate(-10deg); pointer-events: none; }
+            body.compact .invoice-hero, body.compact .invoice-body { padding: 18px; }
+            body.premium .invoice-shell { border: 4px solid ${accent}; }
+            @media print {
+              body { background: #ffffff; }
+              .invoice-shell { width: 100%; margin: 0; box-shadow: none; border-radius: 0; }
+            }
+            @media (max-width: 720px) {
+              .invoice-hero, .info-grid { grid-template-columns: 1fr; }
+              .invoice-title { text-align: left; }
+              th, td { padding: 10px 8px; font-size: 13px; }
+              .watermark { font-size: 42px; }
+            }
           </style>
         </head>
-        <body>
-          <section class="top">
+        <body class="${escapeHtml(layout)}">
+          <main class="invoice-shell">
+            ${watermark}
+            <section class="invoice-hero">
+              <div class="brand-line">
+                <div class="brand-mark">${logo}</div>
+                <div>
+                  <h1>${escapeHtml(bill.hotel.hotelName)}</h1>
+                  <p>${escapeHtml(bill.hotel.address)}</p>
+                  <p>GSTIN: ${escapeHtml(bill.hotel.gstin)} | Contact: ${escapeHtml(bill.hotel.contact)}</p>
+                </div>
+              </div>
             <div>
-              <h1>${escapeHtml(bill.hotel.hotelName)}</h1>
-              <p>${escapeHtml(bill.hotel.address)}</p>
-              <p>GSTIN: ${escapeHtml(bill.hotel.gstin)} | Contact: ${escapeHtml(bill.hotel.contact)}</p>
+                <div class="invoice-title">
+                  <strong>${escapeHtml(settings.title)}</strong>
+                  <h2>${escapeHtml(bill.billNo)}</h2>
+                  <p>${escapeHtml(bill.createdAt)}</p>
+                </div>
             </div>
-            <div>
-              <h2>${escapeHtml(bill.billNo)}</h2>
-              <p>${escapeHtml(bill.createdAt)}</p>
-              <p>Table: ${escapeHtml(bill.customer.tableNumber || "-")}</p>
-            </div>
-          </section>
-          <p><strong>Customer:</strong> ${escapeHtml(bill.customer.customerName || "Customer")}</p>
+            </section>
+            <section class="invoice-body">
+              <div class="info-grid">
+                <div class="info-card"><span>Customer</span><strong>${escapeHtml(bill.customer.customerName || "Customer")}</strong></div>
+                <div class="info-card"><span>Table</span><strong>${escapeHtml(bill.customer.tableNumber || "-")}</strong></div>
+                <div class="info-card"><span>Payment</span><strong>${escapeHtml(bill.customer.paymentStatus)}</strong></div>
+                <div class="info-card"><span>WhatsApp</span><strong>${escapeHtml(bill.customer.whatsapp || "-")}</strong></div>
+              </div>
           <table>
             <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>GST</th><th>Total</th></tr></thead>
             <tbody>${rows}</tbody>
@@ -272,7 +355,16 @@ window.smartHotelServices.billing = (() => {
             <div class="row final"><span>Final</span><strong>${money(bill.finalTotal)}</strong></div>
             <div class="row"><span>Payment</span><strong>${escapeHtml(bill.customer.paymentStatus)}</strong></div>
           </section>
-          <p>Thank you for dining with us.</p>
+              <section class="upi-box">
+                <div>
+                  <h3>UPI / QR payment</h3>
+                  <p>${escapeHtml(bill.hotel.upiId || "Add UPI ID in Billing Setup")}</p>
+                </div>
+                ${upiQr}
+              </section>
+            </section>
+            <p class="footer">${escapeHtml(settings.footer || "Thank you for dining with us.")}</p>
+          </main>
         </body>
       </html>`;
   }
@@ -440,14 +532,14 @@ window.smartHotelServices.billing = (() => {
         </div>
         <div class="bill-summary">
           <h3>${escapeHtml(bill.billNo)}</h3>
-          <p class="bill-helper">Scan QR to view bill details. Customer can download e-bill or pay through UPI.</p>
+          <p class="bill-helper">Scan QR to view bill details. Protected downloads use the daily admin password.</p>
           <div class="bill-summary-row"><span>Customer</span><strong>${escapeHtml(bill.customer.customerName || "Customer")}</strong></div>
           <div class="bill-summary-row"><span>Table</span><strong>${escapeHtml(bill.customer.tableNumber || "-")}</strong></div>
           <div class="bill-summary-row"><span>GST</span><strong>${money(bill.gstTotal)}</strong></div>
           <div class="bill-summary-row final"><span>Final</span><strong>${money(bill.finalTotal)}</strong></div>
           <div class="qr-actions">
             <button class="primary-button" type="button" data-open-ebill>Open e-bill</button>
-            <button class="secondary-button" type="button" data-download-ebill>Download bill</button>
+            <button class="secondary-button" type="button" data-download-ebill>Download e-bill</button>
             ${payLink ? `<a class="secondary-button" href="${payLink}">Pay UPI</a>` : `<span class="status-pill warn">Add UPI ID to enable payment</span>`}
           </div>
         </div>
@@ -626,9 +718,25 @@ window.smartHotelServices.billing = (() => {
     populateForms();
   }
 
+  function verifyBillSecurityCode(action = "download") {
+    const settings = loadBillSettings();
+    if (!hasActiveSecurityCode(settings)) {
+      alert("Owner has not set the e-bill security code yet. Open Overview > Bill Security Code first.");
+      return false;
+    }
+    const entered = window.prompt(`Enter the owner e-bill security code to ${action}.`);
+    if (entered === null) return false;
+    if (entered !== String(settings.password || "")) {
+      alert("Wrong e-bill security code. Please ask admin for the current code.");
+      return false;
+    }
+    return true;
+  }
+
   function downloadEbill() {
+    if (!verifyBillSecurityCode("download")) return;
     const bill = currentBillOrPreview();
-    const blob = new Blob([billHtml(bill)], { type: "text/html" });
+    const blob = new Blob([billHtml(bill, { protectedGate: false })], { type: "text/html" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = `${bill.billNo}.html`;
@@ -638,19 +746,25 @@ window.smartHotelServices.billing = (() => {
 
   function openEbill() {
     const bill = currentBillOrPreview();
-    const blob = new Blob([billHtml(bill)], { type: "text/html" });
+    const blob = new Blob([billHtml(bill, { protectedGate: false })], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     window.open(url, "_blank", "noopener,noreferrer");
     setTimeout(() => URL.revokeObjectURL(url), 15000);
   }
 
   function printBill() {
-    activeView = "qr";
-    renderAll();
-    setTimeout(() => window.print(), 100);
+    const bill = currentBillOrPreview();
+    const blob = new Blob([billHtml(bill, { protectedGate: false })], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const printWindow = window.open(url, "_blank", "noopener,noreferrer");
+    setTimeout(() => {
+      if (printWindow) printWindow.print();
+      URL.revokeObjectURL(url);
+    }, 600);
   }
 
   function shareWhatsApp(form) {
+    if (!verifyBillSecurityCode("send")) return;
     const bill = currentBillOrPreview();
     const data = new FormData(form);
     const number = String(data.get("whatsapp") || bill.customer.whatsapp || "").replace(/\D/g, "");
@@ -779,9 +893,9 @@ window.smartHotelServices.billing = (() => {
       event.currentTarget.value = "";
     });
 
-    qs("#billingSeedButton").addEventListener("click", seedData);
-    qs("#billingPrintButton").addEventListener("click", printBill);
-    qs("#billingDownloadButton").addEventListener("click", downloadEbill);
+    qs("#billingSeedButton")?.addEventListener("click", seedData);
+    qs("#billingPrintButton")?.addEventListener("click", printBill);
+    qs("#billingDownloadButton")?.addEventListener("click", downloadEbill);
 
     root.removeEventListener("click", handleRootClick);
     root.addEventListener("click", handleRootClick);

@@ -1,22 +1,13 @@
 <section id="attendance" class="service-section is-active">
   <div class="attendance-system">
     <div class="attendance-hero">
-      <div>
-        <p class="eyebrow">Smart Attendance System</p>
-        <h2>Employee QR Attendance Control</h2>
-        <span>Admin, sub-admin, employee login, personal QR, review and reports.</span>
-      </div>
-      <div class="attendance-hero-actions">
-        <button class="secondary-button" type="button" id="seedAttendanceButton">Load sample team</button>
-        <button class="secondary-button" type="button" id="exportAttendanceButton">Export report</button>
-      </div>
+      <h2>Employee QR Attendance Control</h2>
     </div>
 
     <div id="attendanceStats" class="attendance-stats"></div>
 
     <div class="attendance-tabs" role="tablist" aria-label="Attendance sections">
       <button class="is-active" type="button" data-att-view="admin">Admin Portal</button>
-      <button type="button" data-att-view="employee">Employee Login</button>
       <button type="button" data-att-view="reports">Reports</button>
     </div>
 
@@ -43,7 +34,11 @@
             <input name="userId" placeholder="Unique User ID" required />
             <input name="password" placeholder="Password" required />
             <input name="shift" placeholder="Shift, example: 9AM-6PM" required />
-            <button class="primary-button" type="submit">Create employee + QR</button>
+            <label class="employee-photo-upload">
+              <strong>Employee photo optional</strong>
+              <input name="photo" type="file" accept="image/*" />
+            </label>
+            <button class="primary-button" type="submit">Create employee</button>
           </form>
         </article>
 
@@ -108,47 +103,6 @@
       </div>
     </section>
 
-    <section id="attEmployeeView" class="attendance-view">
-      <div class="employee-login-grid">
-        <article class="att-card">
-          <div class="att-card-heading">
-            <div>
-              <h3>Employee Account Login</h3>
-              <span>Login first, then scan your personal QR to mark attendance.</span>
-            </div>
-          </div>
-          <form id="employeeLoginForm" class="att-form login-form-grid">
-            <input name="userId" placeholder="Employee User ID" required />
-            <input name="password" placeholder="Password" type="password" required />
-            <button class="primary-button" type="submit">Employee login</button>
-          </form>
-          <p id="employeeLoginMessage" class="att-message"></p>
-        </article>
-
-        <article class="att-card">
-          <div class="att-card-heading">
-            <div>
-              <h3>Sub-Admin Login</h3>
-              <span>Review worker attendance without full admin access.</span>
-            </div>
-          </div>
-          <form id="subAdminLoginForm" class="att-form login-form-grid">
-            <input name="userId" placeholder="Sub-admin User ID" required />
-            <input name="password" placeholder="Password" type="password" required />
-            <button class="secondary-button" type="submit">Sub-admin login</button>
-          </form>
-          <p id="subAdminLoginMessage" class="att-message"></p>
-        </article>
-      </div>
-
-      <article id="employeePortal" class="employee-portal att-card">
-        <div class="empty-portal">
-          <h3>No employee logged in</h3>
-          <p>Use an employee User ID and password to open the personal attendance QR.</p>
-        </div>
-      </article>
-    </section>
-
     <section id="attReportsView" class="attendance-view">
       <div class="attendance-layout">
         <article class="att-card report-card">
@@ -172,5 +126,6 @@
         </article>
       </div>
     </section>
+    <aside id="presentApprovalFloat" class="present-approval-float" aria-live="polite"></aside>
   </div>
 </section>

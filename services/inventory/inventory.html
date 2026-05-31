@@ -1,29 +1,124 @@
 <section id="inventory" class="service-section is-active">
   <div class="inventory-system">
     <header class="inventory-hero">
-      <div>
-        <p class="eyebrow">Smart Hotel Inventory & Cost Management</p>
-        <h2>Inventory Command Center</h2>
-        <span>Manage purchases, daily usage, suppliers, staff access, expenses, alerts and business reports.</span>
-      </div>
-      <div class="inventory-hero-actions">
-        <button class="secondary-button" type="button" id="inventorySeedButton">Load demo data</button>
-        <button class="secondary-button" type="button" id="inventoryCsvButton">Download Excel CSV</button>
-        <button class="secondary-button" type="button" id="inventoryPrintButton">Print PDF report</button>
-      </div>
+      <h2>Inventory Command Center</h2>
     </header>
 
     <div id="inventoryStats" class="inventory-stats"></div>
 
-    <div class="inventory-tabs" role="tablist" aria-label="Inventory sections">
-      <button class="is-active" type="button" data-inventory-view="admin">Admin Control</button>
-      <button type="button" data-inventory-view="staff">Staff Entry</button>
-      <button type="button" data-inventory-view="products">Products & Suppliers</button>
-      <button type="button" data-inventory-view="analytics">Graphs</button>
-      <button type="button" data-inventory-view="reports">Reports</button>
+    <div class="inventory-tabs inventory-mode-tabs" role="tablist" aria-label="Inventory modes">
+      <button class="is-active" type="button" data-inventory-view="simple">Simple</button>
+      <button type="button" data-inventory-view="advance">Advance</button>
     </div>
 
-    <section id="invAdminView" class="inventory-view is-active">
+    <section id="invSimpleView" class="inventory-view is-active">
+      <div class="simple-inventory-layout">
+        <article class="inventory-card simple-calendar-card">
+          <div class="inventory-card-heading">
+            <div>
+              <h3>Simple Buy / Sell Calendar</h3>
+              <span>Select one date, then enter how much stock you bought or sold.</span>
+            </div>
+          </div>
+          <div class="simple-calendar-toolbar">
+            <button class="tiny-button" type="button" data-simple-month="prev">Previous</button>
+            <strong id="simpleCalendarLabel">This month</strong>
+            <button class="tiny-button" type="button" data-simple-month="next">Next</button>
+          </div>
+          <div class="simple-week-labels" aria-hidden="true">
+            <span>Sun</span>
+            <span>Mon</span>
+            <span>Tue</span>
+            <span>Wed</span>
+            <span>Thu</span>
+            <span>Fri</span>
+            <span>Sat</span>
+          </div>
+          <div id="simpleInventoryCalendar" class="simple-calendar-grid"></div>
+        </article>
+
+        <article class="inventory-card simple-entry-card">
+          <div class="inventory-card-heading">
+            <div>
+              <h3 id="simpleSelectedDateLabel">Today entry</h3>
+              <span>Green means buy, red means sell. Reports will use the same colors.</span>
+            </div>
+          </div>
+          <div class="simple-product-row">
+            <select id="simpleProductSelect" aria-label="Simple inventory product"></select>
+          </div>
+          <div class="simple-entry-actions">
+            <form id="simpleBuyForm" class="simple-entry-form buy">
+              <strong>Buy</strong>
+              <input name="quantity" type="number" min="0.01" step="0.01" placeholder="How much I buy" required />
+              <input name="amount" type="number" min="1" step="0.01" placeholder="Buy amount / cost" required />
+              <input name="supplier" placeholder="Supplier optional" />
+              <button class="primary-button" type="submit">Save buy</button>
+            </form>
+            <form id="simpleSellForm" class="simple-entry-form sell">
+              <strong>Sell</strong>
+              <input name="quantity" type="number" min="0.01" step="0.01" placeholder="How much I sell" required />
+              <input name="amount" type="number" min="1" step="0.01" placeholder="Sell amount" required />
+              <input name="note" placeholder="Sale note optional" />
+              <button class="secondary-button" type="submit">Save sell</button>
+            </form>
+          </div>
+          <div class="simple-day-summary">
+            <h4>Selected date history</h4>
+            <div id="simpleDayEntries" class="inventory-mini-list"></div>
+          </div>
+        </article>
+      </div>
+
+      <button id="simpleReportsButton" class="inventory-report-fab" type="button">Reports</button>
+      <div id="simpleReportsPanel" class="simple-report-drawer is-hidden" aria-hidden="true">
+        <div class="simple-report-backdrop" data-close-simple-reports></div>
+        <article class="simple-report-card">
+          <div class="inventory-card-heading">
+            <div>
+              <h3>Simple Reports</h3>
+              <span>Weekly, monthly and yearly buy/sell graph. Green = buy, red = sell.</span>
+            </div>
+            <button class="tiny-button" type="button" data-close-simple-reports>Close</button>
+          </div>
+          <div class="simple-report-kpis" id="simpleReportKpis"></div>
+          <div class="simple-report-grid">
+            <section class="chart-panel">
+              <h4>Weekly graph</h4>
+              <div id="simpleWeeklyGraph"></div>
+            </section>
+            <section class="chart-panel">
+              <h4>Monthly graph</h4>
+              <div id="simpleMonthlyGraph"></div>
+            </section>
+            <section class="chart-panel">
+              <h4>Yearly graph</h4>
+              <div id="simpleYearlyGraph"></div>
+            </section>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="invAdvanceView" class="inventory-view">
+      <article class="inventory-card advance-control-card">
+        <div class="inventory-card-heading">
+          <div>
+            <h3>Advance Inventory</h3>
+            <span>Detailed product, supplier, staff access, graphs and full reports stay here.</span>
+          </div>
+        </div>
+        <div class="inventory-advance-tabs" role="tablist" aria-label="Advanced inventory sections">
+          <button class="is-active" type="button" data-inventory-advance-view="products">Product & Supplier</button>
+          <button type="button" data-inventory-advance-view="admin">Admin Users</button>
+          <button type="button" data-inventory-advance-view="staff">Staff Entry</button>
+          <button type="button" data-inventory-advance-view="analytics">Graphs</button>
+          <button type="button" data-inventory-advance-view="reports">Full Reports</button>
+        </div>
+      </article>
+    </section>
+
+    <section id="invAdminView" class="inventory-view">
       <div class="inventory-layout">
         <article class="inventory-card">
           <div class="inventory-card-heading">

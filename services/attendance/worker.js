@@ -139,6 +139,11 @@ function renderCalendar() {
   `;
 }
 
+function refreshFromStorage() {
+  state = loadState();
+  renderCalendar();
+}
+
 function markDate(day) {
   if (!employee() || recordFor(day)) return;
   state.attendance.push({
@@ -182,6 +187,16 @@ document.addEventListener("click", (event) => {
     qs("#workerMessage").textContent = "";
     renderCalendar();
   }
+});
+
+window.addEventListener("storage", (event) => {
+  if (event.key === STORAGE_KEY) refreshFromStorage();
+});
+
+window.addEventListener("focus", refreshFromStorage);
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) refreshFromStorage();
 });
 
 renderCalendar();

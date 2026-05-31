@@ -8,11 +8,14 @@ window.smartHotelServices.inventory = (() => {
 
   let root = null;
   let state = loadState();
-  let activeView = "admin";
+  let activeView = "simple";
+  let activeAdvanceView = "products";
   let inventorySearch = "";
   let categoryFilter = "All";
   let selectedGraphProduct = "";
   let currentStaffId = "";
+  let simpleSelectedDate = todayKey();
+  let simpleCalendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
   function uid(prefix) {
     return `${prefix}-${Math.random().toString(16).slice(2, 8)}${Date.now().toString(16).slice(-4)}`;
@@ -54,7 +57,7 @@ window.smartHotelServices.inventory = (() => {
   }
 
   function escapeHtml(value) {
-    return String(value || "").replace(/[&<>"']/g, (char) => ({
+    return String(value ?? "").replace(/[&<>"']/g, (char) => ({
       "&": "&amp;",
       "<": "&lt;",
       ">": "&gt;",
@@ -242,6 +245,10 @@ window.smartHotelServices.inventory = (() => {
     return new Date().toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
   }
 
+  function titleCase(value) {
+    return String(value || "").charAt(0).toUpperCase() + String(value || "").slice(1);
+  }
+
   function addActivity(type, name, detail) {
     state.activity.unshift({ id: uid("act"), type, name, detail, time: dateTimeNow() });
     state.activity = state.activity.slice(0, 60);
@@ -253,7 +260,7 @@ window.smartHotelServices.inventory = (() => {
 
   function monthlyPurchaseCost(key = monthKey(todayKey())) {
     return state.entries
-      .filter((entry) => entry.entryType === "morning" && monthKey(entry.date) === key)
+      .filter((entry) => ["morning", "simple-buy"].includes(entry.entryType) && monthKey(entry.date) === key)
       .reduce((sum, entry) => sum + Number(entry.purchasePrice || 0), 0);
   }
 
@@ -272,7 +279,7 @@ window.smartHotelServices.inventory = (() => {
 
   function todayUsage() {
     return state.entries
-      .filter((entry) => entry.entryType === "night" && entry.date === todayKey())
+      .filter((entry) => ["night", "simple-sell"].includes(entry.entryType) && entry.date === todayKey())
       .reduce((sum, entry) => sum + Number(entry.usedQty || 0), 0);
   }
 
@@ -313,11 +320,23 @@ window.smartHotelServices.inventory = (() => {
   }
 
   function renderTabs() {
+    if (!["simple", "advance"].includes(activeView)) {
+      activeAdvanceView = activeView;
+      activeView = "advance";
+    }
     qsa("[data-inventory-view]").forEach((button) => {
       button.classList.toggle("is-active", button.dataset.inventoryView === activeView);
     });
     qsa(".inventory-view").forEach((view) => view.classList.remove("is-active"));
-    qs(`#inv${activeView[0].toUpperCase()}${activeView.slice(1)}View`).classList.add("is-active");
+    qsa("[data-inventory-advance-view]").forEach((button) => {
+      button.classList.toggle("is-active", button.dataset.inventoryAdvanceView === activeAdvanceView);
+    });
+    const mainView = qs(`#inv${titleCase(activeView)}View`);
+    if (mainView) mainView.classList.add("is-active");
+    if (activeView === "advance") {
+      const advanceView = qs(`#inv${titleCase(activeAdvanceView)}View`);
+      if (advanceView) advanceView.classList.add("is-active");
+    }
   }
 
   function renderStats() {
@@ -340,14 +359,204 @@ window.smartHotelServices.inventory = (() => {
     const productOptions = state.products.map((item) => `<option value="${item.id}">${escapeHtml(item.name)} (${escapeHtml(item.unit)})</option>`).join("");
     const stockProductSelect = qs("#stockEntryForm select[name='productId']");
     const graphSelect = qs("#productGraphSelect");
+    const simpleProductSelect = qs("#simpleProductSelect");
     stockProductSelect.innerHTML = productOptions;
     graphSelect.innerHTML = productOptions;
+    simpleProductSelect.innerHTML = productOptions || `<option value="">Add a product first</option>`;
     if (!selectedGraphProduct || !productById(selectedGraphProduct)) selectedGraphProduct = state.products[0]?.id || "";
     graphSelect.value = selectedGraphProduct;
 
     const categoryOptions = `<option value="All">All categories</option>${categories.map((category) => `<option value="${category}">${category}</option>`).join("")}`;
     qs("#inventoryCategoryFilter").innerHTML = categoryOptions;
     qs("#inventoryCategoryFilter").value = categoryFilter;
+  }
+
+  function dateFromKey(key) {
+    const [year, month, day] = String(key || todayKey()).split("-").map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  function shortDate(key) {
+    return dateFromKey(key).toLocaleDateString([], { day: "2-digit", month: "short", year: "numeric" });
+  }
+
+  function simpleEntries() {
+    return state.entries.filter((entry) => ["simple-buy", "simple-sell"].includes(entry.entryType));
+  }
+
+  function simpleTotals(filterFn) {
+    return simpleEntries().filter(filterFn).reduce((totals, entry) => {
+      if (entry.entryType === "simple-buy") {
+        totals.buy += Number(entry.purchasePrice || 0);
+        totals.buyQty += Number(entry.quantityReceived || 0);
+      } else {
+        totals.sell += Number(entry.saleAmount || 0);
+        totals.sellQty += Number(entry.usedQty || 0);
+      }
+      return totals;
+    }, { buy: 0, sell: 0, buyQty: 0, sellQty: 0 });
+  }
+
+  function simpleTotalsForDate(key) {
+    return simpleTotals((entry) => entry.date === key);
+  }
+
+  function addDays(date, amount) {
+    const next = new Date(date);
+    next.setDate(next.getDate() + amount);
+    return next;
+  }
+
+  function renderSimpleCalendar() {
+    const monthStart = new Date(simpleCalendarMonth.getFullYear(), simpleCalendarMonth.getMonth(), 1);
+    const firstCell = addDays(monthStart, -monthStart.getDay());
+    qs("#simpleCalendarLabel").textContent = monthStart.toLocaleDateString([], { month: "long", year: "numeric" });
+
+    const selectedMonth = simpleCalendarMonth.getMonth();
+    qs("#simpleInventoryCalendar").innerHTML = Array.from({ length: 42 }, (_, index) => {
+      const date = addDays(firstCell, index);
+      const key = dateKey(date);
+      const totals = simpleTotalsForDate(key);
+      const classes = [
+        "simple-day",
+        date.getMonth() !== selectedMonth ? "is-outside" : "",
+        key === simpleSelectedDate ? "is-selected" : "",
+        key === todayKey() ? "is-today" : "",
+        totals.buy || totals.sell ? "has-entry" : ""
+      ].filter(Boolean).join(" ");
+      return `
+        <button class="${classes}" type="button" data-simple-date="${key}">
+          <span class="simple-day-number">${date.getDate()}</span>
+          <span class="simple-day-bars">
+            <i class="buy" style="--bar-size: ${Math.min(100, totals.buy / 50)}%"></i>
+            <i class="sell" style="--bar-size: ${Math.min(100, totals.sell / 50)}%"></i>
+          </span>
+          <small>${totals.buy ? `Buy ${money(totals.buy)}` : ""}</small>
+          <small class="sell-text">${totals.sell ? `Sell ${money(totals.sell)}` : ""}</small>
+        </button>
+      `;
+    }).join("");
+  }
+
+  function renderSimpleDayEntries() {
+    qs("#simpleSelectedDateLabel").textContent = `${shortDate(simpleSelectedDate)} entry`;
+    const entries = simpleEntries().filter((entry) => entry.date === simpleSelectedDate).slice().reverse();
+    const totals = simpleTotalsForDate(simpleSelectedDate);
+    const summary = `
+      <article class="simple-total-row">
+        <strong class="buy">Buy ${money(totals.buy)}</strong>
+        <strong class="sell">Sell ${money(totals.sell)}</strong>
+      </article>
+    `;
+    qs("#simpleDayEntries").innerHTML = summary + (entries.map((entry) => {
+      const item = productById(entry.productId);
+      const isBuy = entry.entryType === "simple-buy";
+      const amount = isBuy ? entry.purchasePrice : entry.saleAmount;
+      const quantity = isBuy ? entry.quantityReceived : entry.usedQty;
+      return `
+        <article class="mini-row simple-entry-row ${isBuy ? "buy" : "sell"}">
+          <div>
+            <h4>${isBuy ? "Buy" : "Sell"} ${escapeHtml(item?.name || "Product")} <span class="status-pill ${isBuy ? "good" : "danger"}">${money(amount)}</span></h4>
+            <p>${qty(quantity, item?.unit)} | ${escapeHtml(entry.note || entry.supplier || "Simple entry")} | ${escapeHtml(entry.createdAt)}</p>
+          </div>
+        </article>
+      `;
+    }).join("") || emptyRow("No buy or sell on this date", "Choose Buy or Sell above to add a simple entry."));
+  }
+
+  function currentMonthBuckets() {
+    const year = simpleCalendarMonth.getFullYear();
+    const month = simpleCalendarMonth.getMonth();
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    return Array.from({ length: 5 }, (_, index) => {
+      const startDay = index * 7 + 1;
+      const endDay = Math.min(startDay + 6, lastDay);
+      if (startDay > lastDay) return null;
+      const totals = simpleTotals((entry) => {
+        const date = dateFromKey(entry.date);
+        return date.getFullYear() === year && date.getMonth() === month && date.getDate() >= startDay && date.getDate() <= endDay;
+      });
+      return { label: `${startDay}-${endDay}`, ...totals };
+    }).filter(Boolean);
+  }
+
+  function yearlyBuckets() {
+    const year = new Date().getFullYear();
+    return Array.from({ length: 12 }, (_, monthIndex) => {
+      const totals = simpleTotals((entry) => {
+        const date = dateFromKey(entry.date);
+        return date.getFullYear() === year && date.getMonth() === monthIndex;
+      });
+      return {
+        label: new Date(year, monthIndex, 1).toLocaleDateString([], { month: "short" }),
+        ...totals
+      };
+    });
+  }
+
+  function weeklyBuckets() {
+    const selected = dateFromKey(simpleSelectedDate);
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = addDays(selected, index - 6);
+      const key = dateKey(date);
+      return {
+        label: date.toLocaleDateString([], { weekday: "short" }),
+        ...simpleTotalsForDate(key)
+      };
+    });
+  }
+
+  function renderSimpleDualChart(data, label) {
+    const max = Math.max(...data.flatMap((item) => [item.buy, item.sell]), 1);
+    const step = 640 / Math.max(data.length, 1);
+    const bars = data.map((item, index) => {
+      const groupX = 44 + index * step;
+      const buyHeight = item.buy ? Math.max(8, (item.buy / max) * 160) : 0;
+      const sellHeight = item.sell ? Math.max(8, (item.sell / max) * 160) : 0;
+      return `
+        <rect x="${groupX}" y="${218 - buyHeight}" width="18" height="${buyHeight}" rx="6" fill="#0f9f6e"></rect>
+        <rect x="${groupX + 22}" y="${218 - sellHeight}" width="18" height="${sellHeight}" rx="6" fill="#dc2626"></rect>
+        <text x="${groupX + 20}" y="244" text-anchor="middle" class="chart-label">${escapeHtml(item.label)}</text>
+      `;
+    }).join("");
+    return `
+      <svg viewBox="0 0 720 280" role="img" aria-label="${escapeHtml(label)}">
+        <line x1="34" y1="218" x2="690" y2="218" stroke="#dbe5ef" stroke-width="2"></line>
+        ${bars}
+      </svg>
+      <div class="legend-list">
+        <span class="legend-chip"><i class="legend-dot" style="--dot-color: #0f9f6e"></i>Buy</span>
+        <span class="legend-chip"><i class="legend-dot" style="--dot-color: #dc2626"></i>Sell</span>
+      </div>
+    `;
+  }
+
+  function renderSimpleReports() {
+    const currentMonth = monthKey(simpleSelectedDate);
+    const monthTotals = simpleTotals((entry) => monthKey(entry.date) === currentMonth);
+    const year = new Date().getFullYear();
+    const yearTotals = simpleTotals((entry) => dateFromKey(entry.date).getFullYear() === year);
+    qs("#simpleReportKpis").innerHTML = [
+      ["Selected date buy", money(simpleTotalsForDate(simpleSelectedDate).buy)],
+      ["Selected date sell", money(simpleTotalsForDate(simpleSelectedDate).sell)],
+      ["This month buy", money(monthTotals.buy)],
+      ["This month sell", money(monthTotals.sell)],
+      ["This year net", money(yearTotals.sell - yearTotals.buy)]
+    ].map(([label, value]) => `
+      <article class="budget-card">
+        <strong>${escapeHtml(value)}</strong>
+        <span>${escapeHtml(label)}</span>
+      </article>
+    `).join("");
+    qs("#simpleWeeklyGraph").innerHTML = renderSimpleDualChart(weeklyBuckets(), "Weekly simple inventory graph");
+    qs("#simpleMonthlyGraph").innerHTML = renderSimpleDualChart(currentMonthBuckets(), "Monthly simple inventory graph");
+    qs("#simpleYearlyGraph").innerHTML = renderSimpleDualChart(yearlyBuckets(), "Yearly simple inventory graph");
+  }
+
+  function renderSimpleInventory() {
+    renderSimpleCalendar();
+    renderSimpleDayEntries();
+    renderSimpleReports();
   }
 
   function filteredProducts() {
@@ -543,8 +752,8 @@ window.smartHotelServices.inventory = (() => {
   function productMonthData(productId) {
     return lastSixMonths().map((key) => {
       const entries = state.entries.filter((entry) => entry.productId === productId && monthKey(entry.date) === key);
-      const purchase = entries.filter((entry) => entry.entryType === "morning").reduce((sum, entry) => sum + Number(entry.purchasePrice || 0), 0);
-      const usage = entries.filter((entry) => entry.entryType === "night").reduce((sum, entry) => sum + Number(entry.usedQty || 0), 0);
+      const purchase = entries.filter((entry) => ["morning", "simple-buy"].includes(entry.entryType)).reduce((sum, entry) => sum + Number(entry.purchasePrice || 0), 0);
+      const usage = entries.filter((entry) => ["night", "simple-sell"].includes(entry.entryType)).reduce((sum, entry) => sum + Number(entry.usedQty || 0), 0);
       const waste = entries.filter((entry) => entry.entryType === "night").reduce((sum, entry) => sum + Number(entry.wasteQty || 0), 0);
       return { key, label: monthLabel(key), purchase, usage, waste };
     });
@@ -664,10 +873,20 @@ window.smartHotelServices.inventory = (() => {
     const latestEntries = state.entries.slice(-10).reverse();
     qs("#monthlyInventoryReport").innerHTML = latestEntries.map((entry) => {
       const item = productById(entry.productId);
-      const title = entry.entryType === "morning" ? "Morning purchase" : "Night closing";
-      const detail = entry.entryType === "morning"
-        ? `${qty(entry.quantityReceived, item?.unit)} received | ${money(entry.purchasePrice)} | ${entry.approved ? "Approved" : "Approval pending"}`
-        : `${qty(entry.usedQty, item?.unit)} used | ${qty(entry.wasteQty, item?.unit)} waste | ${qty(entry.remainingQty, item?.unit)} remaining`;
+      const entryTypeLabel = {
+        morning: "Morning purchase",
+        night: "Night closing",
+        "simple-buy": "Simple buy",
+        "simple-sell": "Simple sell"
+      };
+      const title = entryTypeLabel[entry.entryType] || "Stock entry";
+      let detail = `${qty(entry.usedQty, item?.unit)} used | ${qty(entry.wasteQty, item?.unit)} waste | ${qty(entry.remainingQty, item?.unit)} remaining`;
+      if (["morning", "simple-buy"].includes(entry.entryType)) {
+        detail = `${qty(entry.quantityReceived, item?.unit)} received | ${money(entry.purchasePrice)} | ${entry.approved ? "Approved" : "Approval pending"}`;
+      }
+      if (entry.entryType === "simple-sell") {
+        detail = `${qty(entry.usedQty, item?.unit)} sold | Sell ${money(entry.saleAmount)} | Profit ${money(entry.profitLoss)}`;
+      }
       return reportRow(`${title}: ${item?.name || "Unknown"}`, detail, `${entry.date} | By ${entry.submittedBy}`);
     }).join("") || emptyRow("No monthly entries", "Daily stock entries will appear here.");
   }
@@ -698,6 +917,7 @@ window.smartHotelServices.inventory = (() => {
     renderTabs();
     renderStats();
     renderSelects();
+    renderSimpleInventory();
     renderEmployees();
     renderExpenses();
     renderProductBoards();
@@ -823,11 +1043,115 @@ window.smartHotelServices.inventory = (() => {
     renderAll();
   }
 
+  function selectedSimpleProduct() {
+    const productId = qs("#simpleProductSelect").value || state.products[0]?.id || "";
+    return productById(productId);
+  }
+
+  function saveSimpleBuy(form) {
+    const item = selectedSimpleProduct();
+    if (!item) {
+      alert("Add a product in Advance first.");
+      activeView = "advance";
+      activeAdvanceView = "products";
+      renderAll();
+      return;
+    }
+    const data = new FormData(form);
+    const quantity = Number(data.get("quantity"));
+    const amount = Number(data.get("amount"));
+    if (!quantity || !amount) {
+      alert("Type buy quantity and buy amount.");
+      return;
+    }
+    const supplier = String(data.get("supplier") || "").trim();
+    const entry = {
+      id: uid("ent"),
+      productId: item.id,
+      entryType: "simple-buy",
+      date: simpleSelectedDate,
+      quantityReceived: quantity,
+      purchasePrice: amount,
+      unitCost: amount / quantity,
+      remainingQty: 0,
+      usedQty: 0,
+      wasteQty: 0,
+      totalCost: amount,
+      profitLoss: 0,
+      supplier,
+      photoName: "",
+      photo: "",
+      note: supplier ? `Bought from ${supplier}` : "Simple buy entry",
+      submittedBy: "Simple",
+      approved: true,
+      approvedBy: "Admin",
+      createdAt: dateTimeNow()
+    };
+    item.stock = Number(item.stock || 0) + quantity;
+    item.price = entry.unitCost;
+    if (supplier) item.supplier = supplier;
+    state.entries.push(entry);
+    addActivity("Simple buy", "Admin", `${item.name}: ${qty(quantity, item.unit)} bought for ${money(amount)} on ${simpleSelectedDate}`);
+    form.reset();
+    saveState();
+    renderAll();
+  }
+
+  function saveSimpleSell(form) {
+    const item = selectedSimpleProduct();
+    if (!item) {
+      alert("Add a product in Advance first.");
+      activeView = "advance";
+      activeAdvanceView = "products";
+      renderAll();
+      return;
+    }
+    const data = new FormData(form);
+    const quantity = Number(data.get("quantity"));
+    const amount = Number(data.get("amount"));
+    if (!quantity || !amount) {
+      alert("Type sell quantity and sell amount.");
+      return;
+    }
+    const note = String(data.get("note") || "").trim();
+    const cost = quantity * Number(item.price || 0);
+    const entry = {
+      id: uid("ent"),
+      productId: item.id,
+      entryType: "simple-sell",
+      date: simpleSelectedDate,
+      quantityReceived: 0,
+      purchasePrice: 0,
+      unitCost: Number(item.price || 0),
+      remainingQty: Math.max(0, Number(item.stock || 0) - quantity),
+      usedQty: quantity,
+      wasteQty: 0,
+      totalCost: cost,
+      saleAmount: amount,
+      profitLoss: amount - cost,
+      supplier: "",
+      photoName: "",
+      photo: "",
+      note: note || "Simple sell entry",
+      submittedBy: "Simple",
+      approved: true,
+      approvedBy: "Admin",
+      createdAt: dateTimeNow()
+    };
+    item.stock = entry.remainingQty;
+    state.entries.push(entry);
+    addActivity("Simple sell", "Admin", `${item.name}: ${qty(quantity, item.unit)} sold for ${money(amount)} on ${simpleSelectedDate}`);
+    form.reset();
+    saveState();
+    renderAll();
+  }
+
   async function saveStockEntry(form) {
     const staff = currentStaff();
     if (!staff) {
       alert("Please login as inventory staff before saving stock entry.");
-      activeView = "staff";
+      activeView = "advance";
+      activeAdvanceView = "staff";
       renderAll();
       return;
     }
@@ -919,8 +1243,9 @@ window.smartHotelServices.inventory = (() => {
       ...state.products.map((item) => ["Product", item.name, item.category, qty(item.stock, item.unit), item.stock * item.price, "", item.supplier].join(",")),
       ...state.entries.map((entry) => {
         const item = productById(entry.productId);
-        const amount = entry.entryType === "morning" ? entry.purchasePrice : entry.totalCost;
-        const quantity = entry.entryType === "morning" ? qty(entry.quantityReceived, item?.unit) : `${qty(entry.usedQty, item?.unit)} used`;
+        const isBuyEntry = ["morning", "simple-buy"].includes(entry.entryType);
+        const amount = isBuyEntry ? entry.purchasePrice : (entry.saleAmount || entry.totalCost);
+        const quantity = isBuyEntry ? qty(entry.quantityReceived, item?.unit) : `${qty(entry.usedQty, item?.unit)} ${entry.entryType === "simple-sell" ? "sold" : "used"}`;
         return ["Entry", item?.name || "Unknown", entry.entryType, quantity, amount, entry.date, entry.note].join(",");
       }),
       ...state.expenses.map((expense) => ["Expense", expense.note, expense.type, "", expense.amount, expense.date, ""].join(","))
@@ -938,7 +1263,8 @@ window.smartHotelServices.inventory = (() => {
   }
 
   function printReport() {
-    activeView = "reports";
+    activeView = "advance";
+    activeAdvanceView = "reports";
     renderAll();
     setTimeout(() => window.print(), 100);
   }
@@ -948,6 +1274,8 @@ window.smartHotelServices.inventory = (() => {
     state = defaultState();
     currentStaffId = "";
     selectedGraphProduct = "";
+    simpleSelectedDate = todayKey();
+    simpleCalendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     saveState();
     renderAll();
   }
@@ -959,11 +1287,43 @@ window.smartHotelServices.inventory = (() => {
       renderAll();
     }
 
+    const advanceButton = event.target.closest("[data-inventory-advance-view]");
+    if (advanceButton) {
+      activeView = "advance";
+      activeAdvanceView = advanceButton.dataset.inventoryAdvanceView;
+      renderAll();
+    }
+
+    const monthButton = event.target.closest("[data-simple-month]");
+    if (monthButton) {
+      const direction = monthButton.dataset.simpleMonth === "next" ? 1 : -1;
+      simpleCalendarMonth = new Date(simpleCalendarMonth.getFullYear(), simpleCalendarMonth.getMonth() + direction, 1);
+      renderAll();
+    }
+
+    const simpleDateButton = event.target.closest("[data-simple-date]");
+    if (simpleDateButton) {
+      simpleSelectedDate = simpleDateButton.dataset.simpleDate;
+      simpleCalendarMonth = new Date(dateFromKey(simpleSelectedDate).getFullYear(), dateFromKey(simpleSelectedDate).getMonth(), 1);
+      renderAll();
+    }
+
+    if (event.target.closest("#simpleReportsButton")) {
+      qs("#simpleReportsPanel").classList.remove("is-hidden");
+      qs("#simpleReportsPanel").setAttribute("aria-hidden", "false");
+    }
+
+    if (event.target.closest("[data-close-simple-reports]")) {
+      qs("#simpleReportsPanel").classList.add("is-hidden");
+      qs("#simpleReportsPanel").setAttribute("aria-hidden", "true");
+    }
+
     const fillButton = event.target.closest("[data-inv-login-fill]");
     if (fillButton) {
       const staff = state.employees.find((item) => item.id === fillButton.dataset.invLoginFill);
       if (!staff) return;
-      activeView = "staff";
+      activeView = "advance";
+      activeAdvanceView = "staff";
       renderAll();
       qs("#inventoryStaffLoginForm").elements.userId.value = staff.userId;
       qs("#inventoryStaffLoginForm").elements.password.value = staff.password;
@@ -971,7 +1331,8 @@ window.smartHotelServices.inventory = (() => {
 
     const quickEntry = event.target.closest("[data-quick-entry]");
     if (quickEntry) {
-      activeView = "staff";
+      activeView = "advance";
+      activeAdvanceView = "staff";
       renderAll();
       qs("#stockEntryForm").elements.productId.value = quickEntry.dataset.quickEntry;
     }
@@ -1086,6 +1447,16 @@ window.smartHotelServices.inventory = (() => {
       renderAll();
     });
 
+    qs("#simpleBuyForm").addEventListener("submit", (event) => {
+      event.preventDefault();
+      saveSimpleBuy(event.currentTarget);
+    });
+
+    qs("#simpleSellForm").addEventListener("submit", (event) => {
+      event.preventDefault();
+      saveSimpleSell(event.currentTarget);
+    });
+
     qs("#inventorySearch").addEventListener("input", (event) => {
       inventorySearch = event.currentTarget.value;
       renderProductBoards();
@@ -1101,9 +1472,9 @@ window.smartHotelServices.inventory = (() => {
       renderAnalytics();
     });
 
-    qs("#inventoryCsvButton").addEventListener("click", exportCsv);
-    qs("#inventoryPrintButton").addEventListener("click", printReport);
-    qs("#inventorySeedButton").addEventListener("click", seedDemoData);
+    qs("#inventoryCsvButton")?.addEventListener("click", exportCsv);
+    qs("#inventoryPrintButton")?.addEventListener("click", printReport);
+    qs("#inventorySeedButton")?.addEventListener("click", seedDemoData);
 
     root.removeEventListener("click", handleRootClick);
     root.addEventListener("click", handleRootClick);

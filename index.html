@@ -4,9 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Smart Hotel Platform</title>
-    <link rel="stylesheet" href="style.css?v=qr-pdf-work-v2" />
+    <link rel="stylesheet" href="style.css?v=inventory-simple-advance-v1" />
     <link rel="stylesheet" href="sidebar-toggle.css?v=sidebar-toggle-v2" />
-    <script defer src="script.js?v=qr-pdf-work-v2"></script>
+    <script defer src="script.js?v=inventory-simple-advance-v1"></script>
     <script defer src="sidebar-toggle.js?v=sidebar-toggle-v2"></script>
   </head>
   <body>
@@ -326,7 +326,7 @@
         <div>
           <p class="eyebrow">Prototype access</p>
           <h1>Smart Hotel Platform</h1>
-          <p class="login-copy">Sign in to manage restaurant, hotel, staff, billing, files, and jobs from one simple control panel.</p>
+          <p class="login-copy">Sign in to manage restaurant, hotel, staff, attendance, inventory, and jobs from one simple control panel.</p>
         </div>
 
         <form id="loginForm" class="login-form">
@@ -356,7 +356,6 @@
           <button class="nav-item" type="button" data-section-link="menu">QR Menu</button>
           <button class="nav-item" type="button" data-section-link="inventory">Inventory</button>
           <button class="nav-item" type="button" data-section-link="attendance">Attendance</button>
-          <button class="nav-item" type="button" data-section-link="billing">Billing & Files</button>
           <button class="nav-item" type="button" data-section-link="jobs">Jobs</button>
         </nav>
       </aside>
@@ -365,15 +364,27 @@
 
       <section class="content-shell">
         <header class="app-header">
-          <div>
-            <p class="eyebrow">Logged in as</p>
-            <h1 id="pageTitle">Operations Overview</h1>
-          </div>
-          <div class="header-actions">
-            <span id="userEmail" class="user-chip"></span>
+          <button id="profileButton" class="profile-button" type="button" aria-expanded="false" aria-controls="profilePanel" aria-label="Open account profile">
+            <span id="profileAvatar" class="profile-avatar">SH</span>
+          </button>
+          <h1 id="pageTitle">Operations Overview</h1>
+        </header>
+
+        <aside id="profilePanel" class="profile-panel is-hidden" aria-label="Account profile">
+          <div class="profile-panel-card">
+            <button id="profilePanelClose" class="profile-panel-close" type="button" aria-label="Close profile">×</button>
+            <div class="profile-panel-avatar-wrap">
+              <span id="profilePanelAvatar" class="profile-panel-avatar">SH</span>
+            </div>
+            <strong>Admin profile</strong>
+            <span id="profileEmail" class="profile-email"></span>
+            <label class="profile-upload">
+              Upload profile picture
+              <input id="profilePhotoInput" type="file" accept="image/*" />
+            </label>
             <button id="logoutButton" class="secondary-button" type="button">Log out</button>
           </div>
-        </header>
+        </aside>
 
         <div id="serviceHost" class="service-host" aria-live="polite"></div>
       </section>

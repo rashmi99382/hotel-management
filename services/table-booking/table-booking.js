@@ -40,6 +40,7 @@ window.smartHotelServices.booking = (() => {
   let lightbox = null;
   let adminCalendarModal = null;
   let adminCanvasClickTimer = null;
+  let roomConfirmationOpen = false;
 
   let tablePricing = [
   ];
@@ -163,6 +164,24 @@ window.smartHotelServices.booking = (() => {
 
   function roomBookingItems(roomId) {
     return roomBookings.filter((booking) => booking.roomId === roomId);
+  }
+
+  function pendingRoomBookings() {
+    return roomBookings.filter((booking) => booking.status === "pending");
+  }
+
+  function confirmRoomBooking(bookingId, code) {
+    const booking = roomBookings.find((item) => item.id === bookingId);
+    const securityCode = String(code || "").trim();
+    if (!booking) return false;
+    if (!securityCode) {
+      alert("Write a security code before confirming this booking.");
+      return false;
+    }
+    booking.status = "approved";
+    booking.securityCode = securityCode;
+    booking.confirmedAt = new Date().toISOString();
+    return true;
   }
 
   function addDays(date, days) {
@@ -512,6 +531,47 @@ window.smartHotelServices.booking = (() => {
     `;
   }
 
+  function renderRoomConfirmationFloat() {
+    const panel = qs("#roomConfirmationFloat");
+    if (!panel) return;
+    const pending = pendingRoomBookings();
+    panel.classList.toggle("is-open", roomConfirmationOpen);
+    panel.classList.toggle("has-pending", pending.length > 0);
+    panel.innerHTML = `
+      <button class="room-confirmation-toggle" type="button" data-toggle-room-confirmations>
+        <span>Confirmation</span>
+        <strong>${pending.length}</strong>
+      </button>
+      ${roomConfirmationOpen ? `
+        <div class="room-confirmation-panel">
+          <div class="room-confirmation-head">
+            <strong>Room booking confirmation</strong>
+            <span>${pending.length ? `${pending.length} pending` : "No pending request"}</span>
+          </div>
+          <div class="room-confirmation-list">
+            ${pending.map((booking) => {
+              const room = rooms.find((item) => item.id === booking.roomId);
+              const floor = floors.find((item) => item.id === room?.floorId);
+              return `
+                <article class="room-confirmation-item">
+                  <div>
+                    <strong>${escapeBookingHtml(booking.name || "Guest")}</strong>
+                    <span>${escapeBookingHtml(booking.mobile || "No mobile")} | ${escapeBookingHtml(floor?.name || "Floor")} | ${escapeBookingHtml(room?.name || booking.roomName || "Room")}</span>
+                    <em>${booking.fromDate || booking.date} to ${booking.toDate || booking.date}</em>
+                  </div>
+                  <div class="room-confirmation-actions">
+                    <input data-floating-booking-code="${escapeBookingHtml(booking.id)}" placeholder="Security code" />
+                    <button class="tiny-button" type="button" data-floating-confirm-room-booking="${escapeBookingHtml(booking.id)}">Confirm</button>
+                  </div>
+                </article>
+              `;
+            }).join("") || `<div class="room-confirmation-empty">All room requests are confirmed.</div>`}
+          </div>
+        </div>
+      ` : ""}
+    `;
+  }
+
   function renderChairs(capacity, shape = "round") {
     const chairCount = Math.min(Math.max(Number(capacity) || 1, 1), 16);
     const radius = shape === "banquet" ? 72 : chairCount > 8 ? 64 : 55;
@@ -828,6 +888,7 @@ window.smartHotelServices.booking = (() => {
     renderAdminTableList();
     renderPricingList();
     renderBookingAdminList();
+    renderRoomConfirmationFloat();
     updateSelectedBookingInfo();
     publishCustomerSnapshot();
   }
@@ -1112,6 +1173,23 @@ window.smartHotelServices.booking = (() => {
     if (!root.dataset.bookingMapZoomBound) {
       root.dataset.bookingMapZoomBound = "true";
       root.addEventListener("click", (event) => {
+        const toggleConfirmations = event.target.closest("[data-toggle-room-confirmations]");
+        if (toggleConfirmations) {
+          roomConfirmationOpen = !roomConfirmationOpen;
+          renderRoomConfirmationFloat();
+          return;
+        }
+
+        const floatingConfirm = event.target.closest("[data-floating-confirm-room-booking]");
+        if (floatingConfirm) {
+          const codeInput = floatingConfirm.closest(".room-confirmation-item")?.querySelector("[data-floating-booking-code]");
+          if (confirmRoomBooking(floatingConfirm.dataset.floatingConfirmRoomBooking, codeInput?.value)) {
+            roomConfirmationOpen = pendingRoomBookings().length > 0;
+            renderBookingModule();
+          }
+          return;
+        }
+
         const zoomButton = event.target.closest("[data-layout-zoom]");
         if (!zoomButton) {
           const uploadDoor = event.target.closest("[data-upload-door]");
@@ -1157,14 +1235,7 @@ window.smartHotelServices.booking = (() => {
         const input = confirmBookingButton.closest(".room-booking-approve")?.querySelector("[data-booking-code-input]");
         const code = input?.value.trim() || "";
         if (!booking) return;
-        if (!code) {
-          alert("Write a security code before confirming this booking.");
-          return;
-        }
-        booking.status = "approved";
-        booking.securityCode = code;
-        booking.confirmedAt = new Date().toISOString();
-        renderBookingModule();
+        if (confirmRoomBooking(booking.id, code)) renderBookingModule();
         return;
       }
 

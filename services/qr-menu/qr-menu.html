@@ -197,10 +197,13 @@
         </div>
       </article>
 
-      <article class="panel customer-menu-panel">
+      <article id="customerExperiencePanel" class="panel customer-menu-panel customer-experience-panel is-hidden" aria-label="Customer QR Experience">
         <div class="panel-heading">
           <h2>Customer QR Experience</h2>
-          <span>What customers see after scanning QR</span>
+          <div class="customer-preview-heading-actions">
+            <span>What customers see after scanning QR</span>
+            <button id="closeCustomerPreviewButton" class="secondary-button" type="button">Close</button>
+          </div>
         </div>
 
         <div class="customer-phone">
@@ -242,6 +245,10 @@
         </div>
       </article>
     </div>
+
+    <button id="customerPreviewFab" class="customer-preview-fab" type="button" aria-expanded="false" aria-controls="customerExperiencePanel">
+      Customer QR Experience
+    </button>
 
     <div id="mediaModal" class="qr-modal is-hidden" role="dialog" aria-modal="true">
       <div class="qr-modal-card">

@@ -1848,15 +1848,114 @@ select:focus {
 .app-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 20px;
+  justify-content: flex-start;
+  gap: 16px;
+  position: relative;
   margin-bottom: 26px;
 }
 
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.profile-button {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  flex: 0 0 auto;
+  border: 1px solid #dbe4f0;
+  border-radius: 999px;
+  padding: 0;
+  background: #ffffff;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.12);
+}
+
+.profile-avatar,
+.profile-panel-avatar {
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  background-position: center;
+  background-size: cover;
+  color: #ffffff;
+  font-weight: 950;
+}
+
+.profile-avatar {
+  width: 46px;
+  height: 46px;
+  font-size: 16px;
+}
+
+.profile-panel {
+  position: fixed;
+  top: 88px;
+  left: 360px;
+  z-index: 70;
+  width: min(340px, calc(100vw - 28px));
+}
+
+.profile-panel.is-hidden {
+  display: none;
+}
+
+.profile-panel-card {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 20px;
+  background: #ffffff;
+  box-shadow: 0 26px 70px rgba(15, 23, 42, 0.2);
+}
+
+.profile-panel-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--ink);
+  font-size: 22px;
+  font-weight: 950;
+}
+
+.profile-panel-avatar-wrap {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  border-radius: 999px;
+  background: #eff6ff;
+}
+
+.profile-panel-avatar {
+  width: 74px;
+  height: 74px;
+  font-size: 22px;
+}
+
+.profile-email {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 780;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-upload {
+  display: grid;
+  gap: 8px;
+  border: 1px dashed #bed0e5;
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--muted);
+  font-weight: 850;
 }
 
 .user-chip {
@@ -2883,7 +2982,6 @@ select:focus {
   }
 
   .app-header,
-  .header-actions,
   .panel-heading {
     align-items: flex-start;
     flex-direction: column;
@@ -2913,5 +3011,10 @@ select:focus {
 
   .user-chip {
     max-width: 100%;
+  }
+
+  .profile-panel {
+    top: 76px;
+    left: 14px;
   }
 }

@@ -11,6 +11,7 @@ window.smartHotelServices.attendance = (() => {
   let currentEmployeeId = "";
   let currentReviewer = { type: "admin", name: "Admin" };
   let attendanceCalendarModal = null;
+  let presentApprovalOpen = false;
 
   function uid(prefix) {
     return `${prefix}-${Math.random().toString(16).slice(2, 8)}${Date.now().toString(16).slice(-4)}`;
@@ -52,7 +53,7 @@ window.smartHotelServices.attendance = (() => {
     };
   }
 
-  function makeEmployee(name, role, userId, password, shift) {
+  function makeEmployee(name, role, userId, password, shift, photo = "") {
     return {
       id: uid("emp"),
       name,
@@ -60,6 +61,7 @@ window.smartHotelServices.attendance = (() => {
       userId,
       password,
       shift,
+      photo,
       qrId: uid("qr"),
       active: true,
       salaryCredited: false,
@@ -80,7 +82,7 @@ window.smartHotelServices.attendance = (() => {
       return {
         ...defaultState(),
         ...parsed,
-        employees: Array.isArray(parsed.employees) ? parsed.employees : [],
+        employees: Array.isArray(parsed.employees) ? parsed.employees.map((employee) => ({ ...employee, photo: employee.photo || "" })) : [],
         subAdmins: Array.isArray(parsed.subAdmins) ? parsed.subAdmins : [],
         attendance,
         activity: Array.isArray(parsed.activity) ? parsed.activity : []
@@ -135,6 +137,30 @@ window.smartHotelServices.attendance = (() => {
 
   function initials(name) {
     return String(name).split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+  }
+
+  function employeeAvatar(employee) {
+    if (employee.photo) {
+      return `
+        <div class="employee-avatar has-photo">
+          <img src="${employee.photo}" alt="${escapeHtml(employee.name)} photo" />
+        </div>
+      `;
+    }
+    return `<div class="employee-avatar">${escapeHtml(initials(employee.name))}</div>`;
+  }
+
+  function readImage(file) {
+    return new Promise((resolve, reject) => {
+      if (!file) {
+        resolve("");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
   }
 
   function employeeById(id) {
@@ -263,6 +289,7 @@ window.smartHotelServices.attendance = (() => {
   }
 
   function renderTabs() {
+    if (activeView === "employee") activeView = "admin";
     qsa("[data-att-view]").forEach((button) => button.classList.toggle("is-active", button.dataset.attView === activeView));
     qsa(".attendance-view").forEach((view) => view.classList.remove("is-active"));
     qs(`#att${activeView[0].toUpperCase()}${activeView.slice(1)}View`).classList.add("is-active");
@@ -291,7 +318,7 @@ window.smartHotelServices.attendance = (() => {
       return `
         <article class="employee-card">
           <div class="employee-card-header">
-            <div class="employee-avatar">${escapeHtml(initials(employee.name))}</div>
+            ${employeeAvatar(employee)}
             <div>
               <h4>${escapeHtml(employee.name)}</h4>
               <p>${escapeHtml(employee.role)} | ${escapeHtml(employee.shift)}</p>
@@ -300,19 +327,15 @@ window.smartHotelServices.attendance = (() => {
           <div class="employee-meta">
             <span>ID: ${escapeHtml(employee.userId)}</span>
             <span>Pass: ${escapeHtml(employee.password)}</span>
-            <span>QR: ${escapeHtml(employee.qrId.slice(-6).toUpperCase())}</span>
-          </div>
-          <div class="personal-qr">
-            ${qrMarkup(employee)}
-            <div>
-              <span class="status-pill ${status === "present" ? "present" : "absent"}">${status === "present" ? "Present" : "Not marked"}</span>
-              <p>${record ? `Marked at ${escapeHtml(record.time)}` : "Waiting for QR scan after login."}</p>
-              <span class="status-pill ${reviewClass}">${record?.reviewed ? "Reviewed" : record ? "Review pending" : "No record"}</span>
-            </div>
+            <span class="status-pill ${status === "present" ? "present" : "absent"}">${status === "present" ? "Present" : "Not marked"}</span>
+            <span class="status-pill ${reviewClass}">${record?.reviewed ? "Reviewed" : record ? "Review pending" : "No record"}</span>
           </div>
           ${renderMonthCalendar(employee, monthStarts(1)[0], true)}
           <div class="employee-actions">
-            <button class="tiny-button" type="button" data-login-fill="${employee.id}">Use login</button>
+            <label class="tiny-button employee-photo-button">
+              ${employee.photo ? "Change photo" : "Add photo"}
+              <input type="file" accept="image/*" data-employee-photo="${employee.id}" />
+            </label>
             <button class="tiny-button ${employee.salaryCredited ? "" : "ghost"}" type="button" data-toggle-salary="${employee.id}">${employee.salaryCredited ? "Salary credited" : "Credit salary"}</button>
             <button class="tiny-button danger" type="button" data-delete-employee="${employee.id}">Remove</button>
           </div>
@@ -365,6 +388,7 @@ window.smartHotelServices.attendance = (() => {
 
   function renderEmployeePortal() {
     const portal = qs("#employeePortal");
+    if (!portal) return;
     const employee = employeeById(currentEmployeeId);
     if (!employee) {
       portal.innerHTML = `
@@ -402,18 +426,59 @@ window.smartHotelServices.attendance = (() => {
   }
 
   function renderReports() {
-    qs("#attendanceReport").innerHTML = state.employees.map((employee) => {
+    const todayRows = state.employees.map((employee) => {
       const record = recordForEmployee(employee.id);
-      const status = record?.status || "absent";
+      const status = record ? record.reviewed ? record.status : "pending" : "absent";
+      const pillClass = status === "pending" ? "pending" : status === "present" ? "present" : "absent";
       return `
         <article class="report-row">
           <div>
-            <h4>${escapeHtml(employee.name)} <span class="status-pill ${status === "present" ? "present" : "absent"}">${status}</span></h4>
-            <p>${escapeHtml(employee.role)} | ${escapeHtml(employee.shift)} | ${record ? `Time: ${escapeHtml(record.time)}` : "No scan yet"} | ${record?.reviewed ? `Reviewed by ${escapeHtml(record.reviewedBy)}` : "Not reviewed"}</p>
+            <h4>${escapeHtml(employee.name)} <span class="status-pill ${pillClass}">${status}</span></h4>
+            <p>${escapeHtml(employee.role)} | ${escapeHtml(employee.shift)} | ${record ? `Time: ${escapeHtml(record.time)}` : "No scan yet"} | ${record?.reviewed ? `Reviewed by ${escapeHtml(record.reviewedBy)}` : record ? "Waiting for admin approval" : "Not marked"}</p>
+          </div>
+          ${record && !record.reviewed ? `
+            <div class="review-actions">
+              <button class="tiny-button" type="button" data-review-record="${record.id}">Approve</button>
+              <button class="tiny-button danger" type="button" data-mark-absent="${record.id}">Reject</button>
+            </div>
+          ` : ""}
+        </article>
+      `;
+    }).join("");
+
+    const pending = pendingRecords();
+    const pendingRows = pending.map((record) => {
+      const employee = employeeById(record.employeeId);
+      return `
+        <article class="report-row report-row-pending">
+          <div>
+            <h4>${escapeHtml(employee?.name || "Unknown employee")} <span class="status-pill pending">pending</span></h4>
+            <p>${escapeHtml(employee?.role || "")} | ${escapeHtml(record.date)} at ${escapeHtml(record.time)} | ${escapeHtml(record.method || "Attendance mark")}</p>
+          </div>
+          <div class="review-actions">
+            <button class="tiny-button" type="button" data-review-record="${record.id}">Approve</button>
+            <button class="tiny-button danger" type="button" data-mark-absent="${record.id}">Reject</button>
           </div>
         </article>
       `;
     }).join("");
+
+    qs("#attendanceReport").innerHTML = `
+      <section class="report-subsection">
+        <div class="report-subsection-head">
+          <strong>Today attendance</strong>
+          <span>${todayKey()}</span>
+        </div>
+        ${todayRows}
+      </section>
+      <section class="report-subsection">
+        <div class="report-subsection-head">
+          <strong>Pending approval queue</strong>
+          <span>${pending.length} pending</span>
+        </div>
+        ${pendingRows || `<article class="report-row"><div><h4>No pending attendance</h4><p>All marked attendance is approved or rejected.</p></div></article>`}
+      </section>
+    `;
 
     const progress = reviewedPercent();
     qs("#reviewCompletion").innerHTML = `
@@ -422,6 +487,46 @@ window.smartHotelServices.attendance = (() => {
       </div>
       <p class="completion-note">${progress === 100 ? "100% attendance review complete." : `${pendingRecords().length} attendance records still need review.`}</p>
       <button class="primary-button" type="button" data-review-all ${pendingRecords().length ? "" : "disabled"}>Approve all pending</button>
+    `;
+  }
+
+  function renderPresentApprovalFloat() {
+    const panel = qs("#presentApprovalFloat");
+    if (!panel) return;
+    const records = pendingRecords();
+    panel.classList.toggle("is-open", presentApprovalOpen);
+    panel.classList.toggle("has-pending", records.length > 0);
+    panel.innerHTML = `
+      <button class="present-approval-toggle" type="button" data-toggle-present-approval>
+        <span>Present Approval</span>
+        <strong>${records.length}</strong>
+      </button>
+      ${presentApprovalOpen ? `
+        <div class="present-approval-panel">
+          <div class="present-approval-head">
+            <strong>Present approval</strong>
+            <span>${records.length ? `${records.length} pending` : "All clear"}</span>
+          </div>
+          <div class="present-approval-list">
+            ${records.map((record) => {
+              const employee = employeeById(record.employeeId);
+              return `
+                <article class="present-approval-item">
+                  <div>
+                    <strong>${escapeHtml(employee?.name || "Unknown employee")}</strong>
+                    <span>${escapeHtml(employee?.role || "Worker")} | ${escapeHtml(record.date)} | ${escapeHtml(record.time)}</span>
+                  </div>
+                  <div class="present-approval-actions">
+                    <button class="tiny-button" type="button" data-review-record="${record.id}">Approve</button>
+                    <button class="tiny-button danger" type="button" data-mark-absent="${record.id}">Reject</button>
+                  </div>
+                </article>
+              `;
+            }).join("") || `<div class="present-approval-empty">No present marks waiting for approval.</div>`}
+          </div>
+          <button class="primary-button" type="button" data-present-approval-all ${records.length ? "" : "disabled"}>Approve all pending</button>
+        </div>
+      ` : ""}
     `;
   }
 
@@ -476,6 +581,7 @@ window.smartHotelServices.attendance = (() => {
     renderActivity();
     renderEmployeePortal();
     renderReports();
+    renderPresentApprovalFloat();
   }
 
   function uniqueUserId(userId, ignoreEmployeeId = "") {
@@ -485,7 +591,7 @@ window.smartHotelServices.attendance = (() => {
     return !employeeMatch && !subAdminMatch;
   }
 
-  function createEmployee(form) {
+  async function createEmployee(form) {
     const data = new FormData(form);
     const userId = String(data.get("userId")).trim();
     if (!uniqueUserId(userId)) {
@@ -493,12 +599,14 @@ window.smartHotelServices.attendance = (() => {
       return;
     }
     const role = String(data.get("role")) === "Custom" ? String(data.get("customRole")).trim() || "Custom worker" : String(data.get("role"));
+    const photo = await readImage(form.elements.photo?.files?.[0]);
     state.employees.push(makeEmployee(
       String(data.get("name")).trim(),
       role,
       userId,
       String(data.get("password")).trim(),
-      String(data.get("shift")).trim()
+      String(data.get("shift")).trim(),
+      photo
     ));
     form.reset();
     saveState();
@@ -638,14 +746,22 @@ window.smartHotelServices.attendance = (() => {
       renderAll();
     }
 
-    const fillButton = event.target.closest("[data-login-fill]");
-    if (fillButton) {
-      const employee = employeeById(fillButton.dataset.loginFill);
-      if (!employee) return;
-      activeView = "employee";
+    if (event.target.closest("[data-toggle-present-approval]")) {
+      presentApprovalOpen = !presentApprovalOpen;
+      renderPresentApprovalFloat();
+      return;
+    }
+
+    if (event.target.closest("[data-present-approval-all]")) {
+      pendingRecords().forEach((record) => {
+        record.reviewed = true;
+        record.status = "present";
+        record.reviewedBy = currentReviewer.name;
+        record.reviewedAt = dateTimeNow();
+      });
+      saveState();
       renderAll();
-      qs("#employeeLoginForm").elements.userId.value = employee.userId;
-      qs("#employeeLoginForm").elements.password.value = employee.password;
+      return;
     }
 
     const openEmployeeCalendar = event.target.closest("[data-open-employee-calendar]");
@@ -701,6 +817,7 @@ window.smartHotelServices.attendance = (() => {
     if (event.target.closest("[data-review-all]")) {
       pendingRecords().forEach((record) => {
         record.reviewed = true;
+        record.status = "present";
         record.reviewedBy = currentReviewer.name;
         record.reviewedAt = dateTimeNow();
       });
@@ -709,10 +826,22 @@ window.smartHotelServices.attendance = (() => {
     }
   }
 
+  async function handleRootChange(event) {
+    const photoInput = event.target.closest("[data-employee-photo]");
+    if (!photoInput) return;
+    const employee = employeeById(photoInput.dataset.employeePhoto);
+    if (!employee) return;
+    const photo = await readImage(photoInput.files?.[0]);
+    if (!photo) return;
+    employee.photo = photo;
+    saveState();
+    renderAll();
+  }
+
   function bindEvents() {
-    qs("#employeeForm").addEventListener("submit", (event) => {
+    qs("#employeeForm").addEventListener("submit", async (event) => {
       event.preventDefault();
-      createEmployee(event.currentTarget);
+      await createEmployee(event.currentTarget);
     });
 
     qs("#subAdminForm").addEventListener("submit", (event) => {
@@ -720,12 +849,12 @@ window.smartHotelServices.attendance = (() => {
       createSubAdmin(event.currentTarget);
     });
 
-    qs("#employeeLoginForm").addEventListener("submit", (event) => {
+    qs("#employeeLoginForm")?.addEventListener("submit", (event) => {
       event.preventDefault();
       employeeLogin(event.currentTarget);
     });
 
-    qs("#subAdminLoginForm").addEventListener("submit", (event) => {
+    qs("#subAdminLoginForm")?.addEventListener("submit", (event) => {
       event.preventDefault();
       subAdminLogin(event.currentTarget);
     });
@@ -740,11 +869,13 @@ window.smartHotelServices.attendance = (() => {
       renderEmployees();
     });
 
-    qs("#seedAttendanceButton").addEventListener("click", seedTeam);
-    qs("#exportAttendanceButton").addEventListener("click", exportReport);
+    qs("#seedAttendanceButton")?.addEventListener("click", seedTeam);
+    qs("#exportAttendanceButton")?.addEventListener("click", exportReport);
 
     root.removeEventListener("click", handleRootClick);
     root.addEventListener("click", handleRootClick);
+    root.removeEventListener("change", handleRootChange);
+    root.addEventListener("change", handleRootChange);
   }
 
   function init(mount) {

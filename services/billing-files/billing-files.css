@@ -14,9 +14,11 @@
 
 .billing-hero {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   gap: 18px;
   align-items: center;
+  min-height: 155px;
+  text-align: center;
   overflow: hidden;
   border-radius: 8px;
   padding: 24px;
@@ -28,7 +30,7 @@
 }
 
 .billing-hero h2 {
-  margin: 4px 0 8px;
+  margin: 0;
   font-size: clamp(32px, 5vw, 56px);
   line-height: 1;
   letter-spacing: 0;

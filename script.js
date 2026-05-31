@@ -1,15 +1,23 @@
 const DEMO_EMAIL = "rashmiranjanabc241947@gmail.com";
 const DEMO_PASSWORD = "Rashmi@123";
 const SESSION_KEY = "smartHotelPrototypeSession";
-const ASSET_VERSION = "qr-pdf-work-v2";
+const ASSET_VERSION = "inventory-simple-advance-v1";
+const PROFILE_KEY = "smartHotelAdminProfile";
+const PUBLIC_HASHES = new Set(["", "home", "design", "product", "plans", "business", "education", "career", "help"]);
 
 const publicView = document.querySelector("#publicView");
 const loginView = document.querySelector("#loginView");
 const appView = document.querySelector("#appView");
 const loginForm = document.querySelector("#loginForm");
 const loginError = document.querySelector("#loginError");
-const userEmail = document.querySelector("#userEmail");
 const pageTitle = document.querySelector("#pageTitle");
+const profileButton = document.querySelector("#profileButton");
+const profilePanel = document.querySelector("#profilePanel");
+const profilePanelClose = document.querySelector("#profilePanelClose");
+const profileAvatar = document.querySelector("#profileAvatar");
+const profilePanelAvatar = document.querySelector("#profilePanelAvatar");
+const profileEmail = document.querySelector("#profileEmail");
+const profilePhotoInput = document.querySelector("#profilePhotoInput");
 const logoutButton = document.querySelector("#logoutButton");
 const backToSiteButton = document.querySelector("#backToSiteButton");
 const serviceHost = document.querySelector("#serviceHost");
@@ -306,11 +314,6 @@ const services = {
     folder: "attendance",
     file: "attendance"
   },
-  billing: {
-    title: "Billing & QR File Transfer",
-    folder: "billing-files",
-    file: "billing-files"
-  },
   jobs: {
     title: "Inbuilt Job Platform",
     folder: "jobs",
@@ -334,11 +337,19 @@ function selectedServiceFromHash() {
   return services[hash] ? hash : "overview";
 }
 
+function currentHashName() {
+  return window.location.hash.replace("#", "");
+}
+
+function isPublicHash(hash = currentHashName()) {
+  return PUBLIC_HASHES.has(hash) || !services[hash];
+}
+
 function showApp() {
   publicView.classList.add("is-hidden");
   loginView.classList.add("is-hidden");
   appView.classList.remove("is-hidden");
-  userEmail.textContent = DEMO_EMAIL;
+  renderProfile();
 }
 
 function showLogin() {
@@ -352,6 +363,66 @@ function showPublic() {
   loginView.classList.add("is-hidden");
   appView.classList.add("is-hidden");
   publicView.classList.remove("is-hidden");
+  closeProfilePanel();
+}
+
+async function routeFromHash() {
+  const hash = currentHashName();
+  if (isPublicHash(hash)) {
+    showPublic();
+    return;
+  }
+  if (localStorage.getItem(SESSION_KEY) === "active") {
+    showApp();
+    await setSection(hash);
+    return;
+  }
+  showLogin();
+}
+
+function loadProfile() {
+  try {
+    return JSON.parse(localStorage.getItem(PROFILE_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveProfile(profile) {
+  localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+}
+
+function setAvatarImage(element, photo) {
+  if (!element) return;
+  element.style.backgroundImage = photo ? `url("${photo}")` : "";
+  element.classList.toggle("has-photo", Boolean(photo));
+  element.textContent = photo ? "" : "SH";
+}
+
+function renderProfile() {
+  const profile = loadProfile();
+  profileEmail.textContent = DEMO_EMAIL;
+  setAvatarImage(profileAvatar, profile.photo);
+  setAvatarImage(profilePanelAvatar, profile.photo);
+}
+
+function openProfilePanel() {
+  profilePanel.classList.remove("is-hidden");
+  profileButton.setAttribute("aria-expanded", "true");
+}
+
+function closeProfilePanel() {
+  profilePanel.classList.add("is-hidden");
+  profileButton.setAttribute("aria-expanded", "false");
+}
+
+function readProfilePhoto(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
 }
 
 function ensureServiceStyle(id) {
@@ -612,7 +683,33 @@ loginForm.addEventListener("submit", async (event) => {
 
 logoutButton.addEventListener("click", () => {
   localStorage.removeItem(SESSION_KEY);
+  history.replaceState(null, "", "#home");
   showPublic();
+});
+
+profileButton.addEventListener("click", () => {
+  if (profilePanel.classList.contains("is-hidden")) {
+    openProfilePanel();
+    return;
+  }
+  closeProfilePanel();
+});
+
+profilePanelClose.addEventListener("click", closeProfilePanel);
+
+profilePhotoInput.addEventListener("change", async (event) => {
+  const file = event.currentTarget.files?.[0];
+  if (!file) return;
+  const photo = await readProfilePhoto(file);
+  saveProfile({ ...loadProfile(), photo });
+  renderProfile();
+  event.currentTarget.value = "";
+});
+
+document.addEventListener("click", (event) => {
+  if (profilePanel.classList.contains("is-hidden")) return;
+  if (profilePanel.contains(event.target) || profileButton.contains(event.target)) return;
+  closeProfilePanel();
 });
 
 navItems.forEach((item) => {
@@ -626,7 +723,10 @@ document.querySelectorAll("[data-open-login], #openLoginButton").forEach((button
   button.addEventListener("click", showLogin);
 });
 
-backToSiteButton.addEventListener("click", showPublic);
+backToSiteButton.addEventListener("click", () => {
+  history.replaceState(null, "", "#home");
+  showPublic();
+});
 
 document.querySelectorAll(".tab").forEach((tab) => {
   tab.addEventListener("click", () => {
@@ -682,4 +782,5 @@ window.addEventListener("smartHotelJobsUpdated", renderPublicCareers);
 window.smartHotelServices = window.smartHotelServices || {};
 renderPublicCareers();
 window.smartHotelLocationDirectory.load().then(renderPublicCareers);
-showPublic();
+window.addEventListener("hashchange", routeFromHash);
+routeFromHash();

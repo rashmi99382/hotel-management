@@ -1,5 +1,6 @@
 const STORAGE_KEY = "smartQrMenuSystemState";
 const BOOKING_STORAGE_KEY = "smartTableBookingCustomerState";
+const BILL_SETTINGS_KEY = "smartBillDownloadSettings";
 
 const state = (() => {
   try {
@@ -19,6 +20,9 @@ let activeHotelRoomId = "";
 let activeHotelSearch = "";
 let cart = {};
 let activeBookingRoomId = "";
+let activeQrBillLink = "";
+let activeBookingBillPayload = null;
+let activeBookingBillLink = "";
 
 function qs(selector) {
   return document.querySelector(selector);
@@ -32,6 +36,46 @@ function escapeHtml(value) {
     "\"": "&quot;",
     "'": "&#39;"
   })[char]);
+}
+
+function todayKey() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+function defaultBillSettings() {
+  return {
+    password: "",
+    passwordDate: todayKey(),
+    passwordSavedAt: "",
+    title: "Tax Invoice",
+    accent: "#2563eb",
+    layout: "classic",
+    watermark: "SMART HOTEL",
+    footer: "Thank you for dining with us."
+  };
+}
+
+function loadBillSettings() {
+  try {
+    return { ...defaultBillSettings(), ...(JSON.parse(localStorage.getItem(BILL_SETTINGS_KEY) || "{}")) };
+  } catch {
+    return defaultBillSettings();
+  }
+}
+
+function cleanAccent(value) {
+  const color = String(value || "").trim();
+  return /^#[0-9a-f]{6}$/i.test(color) ? color : "#2563eb";
+}
+
+function hasActiveSecurityCode(settings) {
+  return Boolean(settings.password && settings.passwordSavedAt);
+}
+
+function ownerSecurityCodeMatches(code) {
+  const settings = loadBillSettings();
+  return hasActiveSecurityCode(settings) && String(settings.password || "") === String(code || "").trim();
 }
 
 function safeUrl(value) {
@@ -94,10 +138,26 @@ function renderBillPanel() {
       <strong>Total ₹${cartTotal()}</strong>
     </div>
     <div class="scan-bill-actions">
+      <button class="scan-view-button scan-qr-bill-button" type="button" data-qr-ebill>QR bill</button>
       <button class="scan-view-button" type="button" data-download-ebill>Download e-bill</button>
+      <button class="order-link scan-send-bill-button" type="button" data-send-ebill>Send bill</button>
       <a class="order-link" href="${escapeHtml(cartWhatsAppLink())}" target="_blank" rel="noreferrer">Send order</a>
     </div>
   `;
+}
+
+function cartBillText() {
+  return [
+    "E-Bill",
+    `Hotel: ${state.hotel?.name || ""}`,
+    state.hotel?.address ? `Address: ${state.hotel.address}` : "",
+    `Date: ${new Date().toLocaleString("en-IN")}`,
+    "",
+    ...cartItems().map((item) => `${item.name} x ${item.qty} = ₹${Number(item.price || 0) * item.qty}`),
+    "",
+    `Total: ₹${cartTotal()}`,
+    "Thank you."
+  ].filter(Boolean).join("\n");
 }
 
 function cartWhatsAppLink() {
@@ -110,26 +170,372 @@ function cartWhatsAppLink() {
   return `https://wa.me/${phoneNumber()}?text=${encodeURIComponent(lines.join("\n"))}`;
 }
 
+function verifyBillSecurityCode(action = "download") {
+  const settings = loadBillSettings();
+  if (!hasActiveSecurityCode(settings)) {
+    alert("Owner has not set the e-bill security code yet. Open Overview > Bill Security Code first.");
+    return false;
+  }
+  const entered = window.prompt(`Enter the owner e-bill security code to ${action}.`);
+  if (entered === null) return false;
+  if (entered !== String(settings.password || "")) {
+    alert("Wrong e-bill security code. Please ask admin for the current code.");
+    return false;
+  }
+  return true;
+}
+
+function cartBillHtml() {
+  const settings = loadBillSettings();
+  const accent = cleanAccent(settings.accent);
+  const items = cartItems();
+  const rows = items.map((item) => `
+    <tr>
+      <td>${escapeHtml(item.name)}</td>
+      <td>${escapeHtml(item.category || "-")}</td>
+      <td>${item.qty}</td>
+      <td>₹${Number(item.price || 0)}</td>
+      <td>₹${Number(item.price || 0) * item.qty}</td>
+    </tr>
+  `).join("");
+  const logo = state.hotel?.logo
+    ? `<img src="${escapeHtml(state.hotel.logo)}" alt="${escapeHtml(state.hotel?.name || "Hotel")} logo" />`
+    : `<span>${escapeHtml(String(state.hotel?.name || "SH").slice(0, 2).toUpperCase())}</span>`;
+  return `<!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>${escapeHtml(settings.title)} - ${escapeHtml(state.hotel?.name || "Restaurant")}</title>
+        <style>
+          * { box-sizing: border-box; }
+          body { margin: 0; background: #eef3f9; color: #111827; font-family: Arial, sans-serif; }
+          h1, h2, p { margin: 0; }
+          .bill-shell { position: relative; width: min(880px, calc(100vw - 28px)); margin: 22px auto; overflow: hidden; border-radius: 8px; background: #ffffff; box-shadow: 0 24px 70px rgba(15, 23, 42, .16); }
+          .bill-hero { display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center; padding: 24px; background: linear-gradient(135deg, ${accent}, #111827); color: #ffffff; }
+          .brand-mark { display: grid; place-items: center; width: 64px; height: 64px; overflow: hidden; border-radius: 8px; background: rgba(255,255,255,.16); font-size: 22px; font-weight: 900; }
+          .brand-mark img { width: 100%; height: 100%; object-fit: cover; }
+          .bill-body { padding: 24px; display: grid; gap: 18px; }
+          .bill-info-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+          .bill-info-grid div { border: 1px solid #dbe5ef; border-radius: 8px; padding: 12px; background: #f8fafc; }
+          .bill-info-grid span { display: block; color: #64748b; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+          .bill-info-grid strong { display: block; margin-top: 4px; color: #111827; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border-bottom: 1px solid #e2e8f0; padding: 12px; text-align: left; }
+          th { background: #f1f5f9; color: #475569; font-size: 12px; text-transform: uppercase; }
+          .total { margin-left: auto; width: min(320px, 100%); border: 1px solid #dbe5ef; border-radius: 8px; padding: 14px; background: #ffffff; }
+          .total-row { display: flex; justify-content: space-between; gap: 12px; color: ${accent}; font-size: 22px; font-weight: 900; }
+          .footer { border-top: 1px solid #dbe5ef; padding: 18px 24px; color: #64748b; font-weight: 700; }
+          .watermark { position: absolute; right: 28px; bottom: 48px; color: rgba(15, 23, 42, .05); font-size: 64px; font-weight: 900; transform: rotate(-10deg); pointer-events: none; }
+          @media (max-width: 680px) {
+            .bill-hero { grid-template-columns: 1fr; }
+            .bill-info-grid { grid-template-columns: 1fr; }
+            th, td { padding: 9px 6px; font-size: 13px; }
+            .watermark { font-size: 38px; }
+          }
+        </style>
+      </head>
+      <body>
+        <main class="bill-shell">
+          ${settings.watermark ? `<div class="watermark">${escapeHtml(settings.watermark)}</div>` : ""}
+          <section class="bill-hero">
+            <div class="brand-mark">${logo}</div>
+            <div>
+              <h1>${escapeHtml(state.hotel?.name || "Restaurant")}</h1>
+              <p>${escapeHtml(state.hotel?.address || "")}</p>
+            </div>
+            <div>
+              <strong>${escapeHtml(settings.title)}</strong>
+              <p>${new Date().toLocaleString("en-IN")}</p>
+            </div>
+          </section>
+          <section class="bill-body">
+            <table>
+              <thead><tr><th>Item</th><th>Category</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+            <section class="total">
+              <div class="total-row"><span>Total</span><strong>₹${cartTotal()}</strong></div>
+            </section>
+          </section>
+          <p class="footer">${escapeHtml(settings.footer || "Thank you for dining with us.")}</p>
+        </main>
+      </body>
+    </html>`;
+}
+
 function downloadEbill() {
   const items = cartItems();
   if (!items.length) return;
-  const lines = [
-    "E-Bill",
-    state.hotel?.name || "Restaurant",
-    state.hotel?.address || "",
-    `Date: ${new Date().toLocaleString("en-IN")}`,
-    "",
-    ...items.map((item) => `${item.name} | Qty ${item.qty} | ₹${item.price * item.qty}`),
-    "",
-    `Total: ₹${cartTotal()}`,
-    "Thank you."
-  ];
-  const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+  if (!verifyBillSecurityCode("download")) return;
+  const file = ebillFile();
+  downloadEbillFile(file);
+}
+
+function ebillFile() {
+  return new File(
+    [cartBillHtml()],
+    `e-bill-${Date.now()}.html`,
+    { type: "text/html" }
+  );
+}
+
+function downloadEbillFile(file) {
   const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = `e-bill-${Date.now()}.txt`;
+  link.href = URL.createObjectURL(file);
+  link.download = file.name;
   link.click();
   URL.revokeObjectURL(link.href);
+}
+
+function billQrImageUrl(data) {
+  return `https://api.qrserver.com/v1/create-qr-code/?size=280x280&margin=10&data=${encodeURIComponent(data)}`;
+}
+
+function cartBillPayload() {
+  const settings = loadBillSettings();
+  return {
+    version: 1,
+    title: settings.title || "Tax Invoice",
+    accent: cleanAccent(settings.accent),
+    watermark: settings.watermark || "SMART HOTEL",
+    footer: settings.footer || "Thank you for dining with us.",
+    createdAt: new Date().toLocaleString("en-IN"),
+    hotel: {
+      id: state.hotel?.id || requestedHotelId() || "",
+      name: state.hotel?.name || "Restaurant",
+      address: state.hotel?.address || "",
+      contact: state.hotel?.contact || ""
+    },
+    items: cartItems().map((item) => ({
+      name: item.name,
+      category: item.category || "",
+      qty: item.qty,
+      price: Number(item.price || 0),
+      total: Number(item.price || 0) * item.qty
+    })),
+    total: cartTotal()
+  };
+}
+
+function encodeBillPayload(payload) {
+  const bytes = new TextEncoder().encode(JSON.stringify(payload));
+  let binary = "";
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function decodeBillPayload(value) {
+  try {
+    const padded = String(value || "").replace(/-/g, "+").replace(/_/g, "/");
+    const binary = atob(padded.padEnd(Math.ceil(padded.length / 4) * 4, "="));
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
+  } catch {
+    return null;
+  }
+}
+
+function billPayloadFromUrl() {
+  return decodeBillPayload(new URLSearchParams(location.search).get("bill"));
+}
+
+function billViewerLink(payload = cartBillPayload()) {
+  const url = new URL(location.pathname, location.origin);
+  url.searchParams.set("hotel", payload.hotel.id || requestedHotelId() || "");
+  url.searchParams.set("bill", encodeBillPayload(payload));
+  return url.href;
+}
+
+function billDocumentHtml(payload) {
+  const rows = (payload.items || []).map((item) => `
+    <tr>
+      <td>${escapeHtml(item.name)}</td>
+      <td>${escapeHtml(item.category || "-")}</td>
+      <td>${Number(item.qty || 0)}</td>
+      <td>₹${Number(item.price || 0)}</td>
+      <td>₹${Number(item.total || 0)}</td>
+    </tr>
+  `).join("");
+  const title = payload.title || "Tax Invoice";
+  const accent = cleanAccent(payload.accent);
+  const infoCards = [
+    ...(payload.customer?.name ? [{ label: "Customer", value: payload.customer.name }] : []),
+    ...(payload.customer?.mobile ? [{ label: "Mobile", value: payload.customer.mobile }] : []),
+    ...(Array.isArray(payload.details) ? payload.details : [])
+  ];
+  return `
+    <main class="bill-shell">
+      ${payload.watermark ? `<div class="watermark">${escapeHtml(payload.watermark)}</div>` : ""}
+      <section class="bill-hero">
+        <div class="brand-mark">${escapeHtml(String(payload.hotel?.name || "SH").slice(0, 2).toUpperCase())}</div>
+        <div>
+          <h1>${escapeHtml(payload.hotel?.name || "Restaurant")}</h1>
+          <p>${escapeHtml(payload.hotel?.address || "")}</p>
+          ${payload.hotel?.contact ? `<p>Contact: ${escapeHtml(payload.hotel.contact)}</p>` : ""}
+        </div>
+        <div>
+          <strong>${escapeHtml(title)}</strong>
+          <p>${escapeHtml(payload.createdAt || new Date().toLocaleString("en-IN"))}</p>
+        </div>
+      </section>
+      <section class="bill-body">
+        ${infoCards.length ? `
+          <div class="bill-info-grid">
+            ${infoCards.map((item) => `
+              <div>
+                <span>${escapeHtml(item.label)}</span>
+                <strong>${escapeHtml(item.value)}</strong>
+              </div>
+            `).join("")}
+          </div>
+        ` : ""}
+        <table>
+          <thead><tr><th>Item</th><th>Category</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <section class="total">
+          <div class="total-row" style="color:${accent}"><span>Total</span><strong>₹${Number(payload.total || 0)}</strong></div>
+        </section>
+      </section>
+      <p class="footer">${escapeHtml(payload.footer || "Thank you for dining with us.")}</p>
+    </main>
+  `;
+}
+
+function fullBillDocument(payload) {
+  const accent = cleanAccent(payload.accent);
+  return `<!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>${escapeHtml(payload.title || "E-Bill")} - ${escapeHtml(payload.hotel?.name || "Restaurant")}</title>
+        <style>
+          * { box-sizing: border-box; }
+          body { margin: 0; background: #eef3f9; color: #111827; font-family: Arial, sans-serif; }
+          h1, h2, p { margin: 0; }
+          .bill-shell { position: relative; width: min(880px, calc(100vw - 28px)); margin: 22px auto; overflow: hidden; border-radius: 8px; background: #ffffff; box-shadow: 0 24px 70px rgba(15, 23, 42, .16); }
+          .bill-hero { display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center; padding: 24px; background: linear-gradient(135deg, ${accent}, #111827); color: #ffffff; }
+          .brand-mark { display: grid; place-items: center; width: 64px; height: 64px; overflow: hidden; border-radius: 8px; background: rgba(255,255,255,.16); font-size: 22px; font-weight: 900; }
+          .bill-body { padding: 24px; display: grid; gap: 18px; }
+          .bill-info-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+          .bill-info-grid div { border: 1px solid #dbe5ef; border-radius: 8px; padding: 12px; background: #f8fafc; }
+          .bill-info-grid span { display: block; color: #64748b; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+          .bill-info-grid strong { display: block; margin-top: 4px; color: #111827; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border-bottom: 1px solid #e2e8f0; padding: 12px; text-align: left; }
+          th { background: #f1f5f9; color: #475569; font-size: 12px; text-transform: uppercase; }
+          .total { margin-left: auto; width: min(320px, 100%); border: 1px solid #dbe5ef; border-radius: 8px; padding: 14px; background: #ffffff; }
+          .total-row { display: flex; justify-content: space-between; gap: 12px; font-size: 22px; font-weight: 900; }
+          .footer { border-top: 1px solid #dbe5ef; padding: 18px 24px; color: #64748b; font-weight: 700; }
+          .watermark { position: absolute; right: 28px; bottom: 48px; color: rgba(15, 23, 42, .05); font-size: 64px; font-weight: 900; transform: rotate(-10deg); pointer-events: none; }
+          @media (max-width: 680px) { .bill-hero, .bill-info-grid { grid-template-columns: 1fr; } th, td { padding: 9px 6px; font-size: 13px; } .watermark { font-size: 38px; } }
+        </style>
+      </head>
+      <body>${billDocumentHtml(payload)}</body>
+    </html>`;
+}
+
+function downloadBillPayload(payload) {
+  const blob = new Blob([fullBillDocument(payload)], { type: "text/html" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `e-bill-${Date.now()}.html`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+function renderBillViewer(payload) {
+  document.title = `${payload.title || "E-Bill"} - ${payload.hotel?.name || "Restaurant"}`;
+  qs(".qr-customer-page").innerHTML = `
+    <section class="scan-shell bill-view-shell">
+      <div class="bill-view-toolbar">
+        <div>
+          <span class="scan-section-kicker">QR Bill</span>
+          <h1>${escapeHtml(payload.title || "E-Bill")}</h1>
+        </div>
+        <button class="order-link" type="button" data-download-shared-bill>Download bill</button>
+      </div>
+      ${billDocumentHtml(payload)}
+    </section>
+  `;
+  document.addEventListener("click", (event) => {
+    if (event.target.closest("[data-download-shared-bill]")) downloadBillPayload(payload);
+  });
+}
+
+function showQrBill() {
+  const items = cartItems();
+  if (!items.length) return;
+  if (!verifyBillSecurityCode("generate QR bill")) return;
+  const payload = cartBillPayload();
+  activeQrBillLink = billViewerLink(payload);
+  qs("#scanQrBillBody").innerHTML = `
+    <div class="qr-bill-box">
+      <span class="scan-section-kicker">Secure QR Bill</span>
+      <h3>Scan to open e-bill</h3>
+      <img class="qr-bill-image" src="${billQrImageUrl(activeQrBillLink)}" alt="QR bill link" />
+      <p>Anyone scanning this QR can open the bill page and download the e-bill. The owner code is only needed to create or send this QR bill.</p>
+      <div class="qr-bill-actions">
+        <a class="scan-view-button" href="${escapeHtml(activeQrBillLink)}" target="_blank" rel="noreferrer">Open bill</a>
+        <button class="order-link scan-send-bill-button" type="button" data-send-qr-bill>Send</button>
+      </div>
+      <small>${escapeHtml(activeQrBillLink)}</small>
+    </div>
+  `;
+  qs("#scanQrBillModal").classList.remove("is-hidden");
+}
+
+function sendQrBillLink() {
+  const link = activeQrBillLink || billViewerLink(cartBillPayload());
+  const rawNumber = window.prompt("Enter customer WhatsApp number to send this bill link.");
+  if (rawNumber === null) return;
+  const digits = rawNumber.replace(/\D/g, "");
+  const number = digits.length === 10 ? `91${digits}` : digits;
+  if (!number) {
+    alert("Enter a valid WhatsApp number.");
+    return;
+  }
+  const message = [
+    "Your e-bill is ready.",
+    `Hotel: ${state.hotel?.name || "Restaurant"}`,
+    `Total: ₹${cartTotal()}`,
+    `Open bill: ${link}`
+  ].join("\n");
+  window.open(`https://wa.me/${number}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
+}
+
+async function sendEbill() {
+  const items = cartItems();
+  if (!items.length) return;
+  if (!verifyBillSecurityCode("send")) return;
+  const rawNumber = window.prompt("Enter customer WhatsApp number to send this bill.");
+  if (rawNumber === null) return;
+  const digits = rawNumber.replace(/\D/g, "");
+  const number = digits.length === 10 ? `91${digits}` : digits;
+  if (!number) {
+    alert("Enter a valid WhatsApp number.");
+    return;
+  }
+  const file = ebillFile();
+  if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({
+        title: "E-bill",
+        text: `E-bill for ${state.hotel?.name || "Restaurant"}. Send it to ${rawNumber}.`,
+        files: [file]
+      });
+      return;
+    } catch (error) {
+      if (error?.name === "AbortError") return;
+    }
+  }
+  downloadEbillFile(file);
+  alert("This browser cannot attach the e-bill file directly to WhatsApp. The e-bill file is downloaded now. WhatsApp will open to that number; attach the downloaded file and click Send.");
+  window.location.assign(`https://wa.me/${number}`);
 }
 
 function categories() {
@@ -551,17 +957,100 @@ function submitRoomDateBooking(day) {
   renderBookingCustomerView();
 }
 
+function bookingBillPayload(data, booking) {
+  const settings = loadBillSettings();
+  const room = data.rooms.find((item) => item.id === booking.roomId);
+  const floor = data.floors.find((item) => item.id === room?.floorId);
+  const roomPrice = Number(room?.price || 0);
+  return {
+    version: 1,
+    type: "room-booking",
+    title: "Room Booking E-Bill",
+    accent: cleanAccent(settings.accent),
+    watermark: settings.watermark || "SMART HOTEL",
+    footer: settings.footer || "Thank you for booking with us.",
+    createdAt: new Date().toLocaleString("en-IN"),
+    hotel: {
+      id: state.hotel?.id || requestedHotelId() || "",
+      name: state.hotel?.name || "Restaurant",
+      address: state.hotel?.address || "",
+      contact: state.hotel?.contact || ""
+    },
+    customer: {
+      name: booking.name || "",
+      mobile: booking.mobile || ""
+    },
+    details: [
+      { label: "Room", value: booking.roomName || room?.name || "Room" },
+      { label: "Floor", value: floor?.name || "Floor" },
+      { label: "Room type", value: room?.type || "Room" },
+      { label: "Booking date", value: booking.fromDate || booking.date || "" }
+    ],
+    items: [
+      {
+        name: booking.roomName || room?.name || "Room booking",
+        category: `${floor?.name || "Floor"} | ${room?.type || "Room"}`,
+        qty: 1,
+        price: roomPrice,
+        total: roomPrice
+      }
+    ],
+    total: roomPrice
+  };
+}
+
+function showBookingConfirmation(data, booking) {
+  activeBookingBillPayload = bookingBillPayload(data, booking);
+  activeBookingBillLink = billViewerLink(activeBookingBillPayload);
+  qs("#scanQrBillBody").innerHTML = `
+    <div class="booking-confirm-box">
+      <span class="scan-section-kicker">Booking confirmed</span>
+      <h3>${escapeHtml(booking.roomName || "Room booking")}</h3>
+      <div class="booking-confirm-grid">
+        <div><span>Name</span><strong>${escapeHtml(booking.name)}</strong></div>
+        <div><span>Mobile</span><strong>${escapeHtml(booking.mobile)}</strong></div>
+        <div><span>Date</span><strong>${escapeHtml(booking.fromDate || booking.date)}</strong></div>
+        <div><span>Security</span><strong>Code verified</strong></div>
+      </div>
+      <div class="booking-confirm-actions">
+        <button class="secondary-button" type="button" data-close-qr-bill>OK</button>
+        <button class="scan-view-button" type="button" data-download-booking-bill>Download e-bill</button>
+        <button class="order-link scan-send-bill-button" type="button" data-show-booking-qr>Scan QR bill</button>
+      </div>
+      <div id="bookingBillQrArea" class="booking-bill-qr-area is-hidden"></div>
+    </div>
+  `;
+  qs("#scanQrBillModal").classList.remove("is-hidden");
+}
+
+function downloadBookingBill() {
+  if (!activeBookingBillPayload) return;
+  downloadBillPayload(activeBookingBillPayload);
+}
+
+function showBookingBillQr() {
+  if (!activeBookingBillPayload) return;
+  activeBookingBillLink = activeBookingBillLink || billViewerLink(activeBookingBillPayload);
+  qs("#bookingBillQrArea").innerHTML = `
+    <img class="qr-bill-image" src="${billQrImageUrl(activeBookingBillLink)}" alt="Room booking bill QR code" />
+    <p>Scan this QR to open the room booking e-bill in browser. The bill page can also download the e-bill.</p>
+    <a class="scan-view-button" href="${escapeHtml(activeBookingBillLink)}" target="_blank" rel="noreferrer">Open bill</a>
+  `;
+  qs("#bookingBillQrArea").classList.remove("is-hidden");
+}
+
 function verifyApprovedRoomBooking(day) {
   const data = bookingCustomerState();
   const booking = bookingForDate(data, activeBookingRoomId, day, "approved");
   if (!booking) return;
-  const code = prompt("Enter the booking security code from admin.");
+  const code = prompt("Enter the booking / owner e-bill security code.");
   if (!code) return;
-  if (String(booking.securityCode || "").trim() !== code.trim()) {
+  const bookingCodeValid = String(booking.securityCode || "").trim() === code.trim();
+  if (!bookingCodeValid && !ownerSecurityCodeMatches(code)) {
     alert("Invalid security code. Please check the code shared by admin.");
     return;
   }
-  alert(`Booking confirmed\nName: ${booking.name}\nMobile: ${booking.mobile}\nRoom: ${booking.roomName}\nDate: ${booking.fromDate || booking.date}`);
+  showBookingConfirmation(data, booking);
 }
 
 function renderBookingCustomerView() {
@@ -858,6 +1347,12 @@ function startPopupTimer() {
 }
 
 function boot() {
+  const sharedBill = billPayloadFromUrl();
+  if (sharedBill) {
+    renderBillViewer(sharedBill);
+    return;
+  }
+
   if (!isValidQr()) {
     renderInvalid();
     return;
@@ -964,6 +1459,31 @@ function boot() {
       return;
     }
 
+    if (event.target.closest("[data-qr-ebill]")) {
+      showQrBill();
+      return;
+    }
+
+    if (event.target.closest("[data-send-ebill]")) {
+      sendEbill();
+      return;
+    }
+
+    if (event.target.closest("[data-send-qr-bill]")) {
+      sendQrBillLink();
+      return;
+    }
+
+    if (event.target.closest("[data-download-booking-bill]")) {
+      downloadBookingBill();
+      return;
+    }
+
+    if (event.target.closest("[data-show-booking-qr]")) {
+      showBookingBillQr();
+      return;
+    }
+
     const roomButton = event.target.closest("[data-open-scan-room]");
     if (roomButton) {
       const room = rooms().find((item) => item.id === roomButton.dataset.openScanRoom);
@@ -1040,6 +1560,7 @@ function boot() {
     }
 
     if (event.target.closest("[data-close-scan-modal]")) closeMediaModal();
+    if (event.target.closest("[data-close-qr-bill]")) qs("#scanQrBillModal").classList.add("is-hidden");
     if (event.target.closest("[data-close-room-booking]")) qs("#scanRoomBookingModal").classList.add("is-hidden");
     if (event.target.closest("[data-close-scan-popup]")) qs("#scanSmartPopup").classList.add("is-hidden");
   });

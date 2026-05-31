@@ -11,6 +11,130 @@
   min-width: 0;
 }
 
+.room-confirmation-float {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 45;
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+  width: min(360px, calc(100vw - 28px));
+  pointer-events: none;
+}
+
+.room-confirmation-float > * {
+  pointer-events: auto;
+}
+
+.room-confirmation-toggle {
+  display: inline-grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  min-width: 190px;
+  min-height: 48px;
+  border: 1px solid rgba(37, 99, 235, .22);
+  border-radius: 8px;
+  padding: 8px 10px 8px 14px;
+  background: #ffffff;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 950;
+  box-shadow: 0 20px 42px rgba(15, 23, 42, .18);
+}
+
+.room-confirmation-toggle strong {
+  display: grid;
+  place-items: center;
+  min-width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #dbeafe;
+  color: var(--brand);
+}
+
+.room-confirmation-float.has-pending .room-confirmation-toggle {
+  border-color: rgba(245, 158, 11, .42);
+}
+
+.room-confirmation-float.has-pending .room-confirmation-toggle strong {
+  background: #f59e0b;
+  color: #ffffff;
+}
+
+.room-confirmation-panel {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  max-height: min(520px, 62vh);
+  overflow: auto;
+  border: 1px solid #d7e1f0;
+  border-radius: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, .98);
+  box-shadow: 0 26px 70px rgba(15, 23, 42, .24);
+}
+
+.room-confirmation-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.room-confirmation-head span {
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.room-confirmation-list {
+  display: grid;
+  gap: 8px;
+}
+
+.room-confirmation-item {
+  display: grid;
+  gap: 9px;
+  border: 1px solid rgba(245, 158, 11, .32);
+  border-radius: 8px;
+  padding: 10px;
+  background: linear-gradient(180deg, #fffaf0, #ffffff);
+}
+
+.room-confirmation-item strong,
+.room-confirmation-item span,
+.room-confirmation-item em {
+  display: block;
+}
+
+.room-confirmation-item span,
+.room-confirmation-item em,
+.room-confirmation-empty {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.room-confirmation-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px;
+}
+
+.room-confirmation-actions input {
+  min-height: 36px;
+  border: 1px solid #d7e1f0;
+  border-radius: 8px;
+  padding: 0 10px;
+  font: inherit;
+}
+
 .booking-tabs {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
