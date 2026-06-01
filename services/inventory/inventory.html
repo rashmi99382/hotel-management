@@ -45,7 +45,15 @@
             </div>
           </div>
           <div class="simple-product-row">
-            <select id="simpleProductSelect" aria-label="Simple inventory product"></select>
+            <label class="simple-product-field">
+              <span>Item name</span>
+              <input id="simpleProductInput" list="simpleProductOptions" placeholder="Select item or type custom item" autocomplete="off" />
+              <datalist id="simpleProductOptions"></datalist>
+            </label>
+            <label class="simple-product-field unit">
+              <span>Unit</span>
+              <input id="simpleUnitInput" placeholder="KG / Liter / Piece" />
+            </label>
           </div>
           <div class="simple-entry-actions">
             <form id="simpleBuyForm" class="simple-entry-form buy">
@@ -77,22 +85,23 @@
           <div class="inventory-card-heading">
             <div>
               <h3>Simple Reports</h3>
-              <span>Weekly, monthly and yearly buy/sell graph. Green = buy, red = sell.</span>
+              <span>Weekly, monthly and yearly profit/loss graph.</span>
             </div>
             <button class="tiny-button" type="button" data-close-simple-reports>Close</button>
           </div>
           <div class="simple-report-kpis" id="simpleReportKpis"></div>
+          <div id="simpleReportInsight" class="simple-report-insight"></div>
           <div class="simple-report-grid">
             <section class="chart-panel">
-              <h4>Weekly graph</h4>
+              <button class="simple-graph-title" type="button" data-simple-report-total="weekly">Weekly graph</button>
               <div id="simpleWeeklyGraph"></div>
             </section>
             <section class="chart-panel">
-              <h4>Monthly graph</h4>
+              <button class="simple-graph-title" type="button" data-simple-report-total="monthly">Monthly graph</button>
               <div id="simpleMonthlyGraph"></div>
             </section>
             <section class="chart-panel">
-              <h4>Yearly graph</h4>
+              <button class="simple-graph-title" type="button" data-simple-report-total="yearly">Yearly graph</button>
               <div id="simpleYearlyGraph"></div>
             </section>
           </div>

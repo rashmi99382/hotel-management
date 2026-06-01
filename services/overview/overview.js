@@ -2,6 +2,11 @@ window.smartHotelServices = window.smartHotelServices || {};
 
 window.smartHotelServices.overview = (() => {
   const BILL_SETTINGS_KEY = "smartBillDownloadSettings";
+  const BOOKING_KEY = "smartTableBookingCustomerState";
+  const MENU_KEY = "smartQrMenuSystemState";
+  const INVENTORY_KEY = "smartInventoryCostSystemState";
+  const ATTENDANCE_KEY = "smartAttendanceSystemState";
+  const CAREER_KEY = "smartHotelCareerPlatformState";
 
   let root = null;
 
@@ -31,6 +36,83 @@ window.smartHotelServices.overview = (() => {
       "\"": "&quot;",
       "'": "&#39;"
     })[char]);
+  }
+
+  function readJson(key, fallback = {}) {
+    try {
+      const value = localStorage.getItem(key);
+      return value ? JSON.parse(value) : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
+  function number(value) {
+    return Number(value || 0).toLocaleString("en-IN");
+  }
+
+  function roomBookingApproved(booking) {
+    return booking?.status === "approved" || booking?.status === "booked";
+  }
+
+  function renderSummaries() {
+    const target = root.querySelector("#overviewSummaryGrid");
+    if (!target) return;
+    const booking = readJson(BOOKING_KEY, {});
+    const menu = readJson(MENU_KEY, {});
+    const inventory = readJson(INVENTORY_KEY, {});
+    const attendance = readJson(ATTENDANCE_KEY, {});
+    const jobs = readJson(CAREER_KEY, {});
+
+    const roomBookings = Array.isArray(booking.roomBookings) ? booking.roomBookings : [];
+    const pendingRooms = roomBookings.filter((item) => item.status === "pending").length;
+    const approvedRooms = roomBookings.filter(roomBookingApproved).length;
+    const foodItems = Array.isArray(menu.foodItems) ? menu.foodItems : [];
+    const categories = Array.isArray(menu.categories) ? menu.categories : [];
+    const products = Array.isArray(inventory.products) ? inventory.products : [];
+    const entries = Array.isArray(inventory.entries) ? inventory.entries : [];
+    const lowStock = products.filter((item) => Number(item.stock || 0) <= Number(item.lowAlert || 0)).length;
+    const employees = Array.isArray(attendance.employees) ? attendance.employees : [];
+    const todayRecords = (Array.isArray(attendance.attendance) ? attendance.attendance : []).filter((record) => record.date === todayKey());
+    const jobsList = Array.isArray(jobs.jobs) ? jobs.jobs : [];
+    const openJobs = jobsList.filter((job) => (job.status || "Open") === "Open").length;
+    const applications = Array.isArray(jobs.applications) ? jobs.applications : [];
+
+    const cards = [
+      {
+        value: number(approvedRooms),
+        title: "Booking QR",
+        text: `${pendingRooms} pending requests, ${(booking.rooms || []).length || 0} rooms, ${(booking.floors || []).length || 0} floors.`
+      },
+      {
+        value: number(foodItems.length),
+        title: "QR Menu",
+        text: `${categories.length || 0} categories, ${menu.hotel?.registered ? "hotel registered" : "hotel not registered"}.`
+      },
+      {
+        value: number(products.length),
+        title: "Inventory",
+        text: `${entries.length} stock entries, ${lowStock} low-stock alerts.`
+      },
+      {
+        value: number(todayRecords.filter((record) => record.status === "present").length),
+        title: "Attendance",
+        text: `${employees.length} employees, ${todayRecords.filter((record) => !record.reviewed).length} pending approvals.`
+      },
+      {
+        value: number(openJobs),
+        title: "Jobs",
+        text: `${applications.length} applications, ${jobsList.filter((job) => job.urgent).length} urgent posts.`
+      }
+    ];
+
+    target.innerHTML = cards.map((card) => `
+      <article class="summary-card">
+        <span>${escapeHtml(card.value)}</span>
+        <h2>${escapeHtml(card.title)}</h2>
+        <p>${escapeHtml(card.text)}</p>
+      </article>
+    `).join("");
   }
 
   function loadSettings() {
@@ -183,6 +265,7 @@ window.smartHotelServices.overview = (() => {
 
   function init(mount) {
     root = mount;
+    renderSummaries();
     root.removeEventListener("click", handleClick);
     root.removeEventListener("submit", handleSubmit);
     root.addEventListener("click", handleClick);

@@ -43,7 +43,13 @@ function loadState() {
     stored.attendance = Array.isArray(stored.attendance)
       ? stored.attendance.filter((record) => new Date(`${record.date}T00:00:00`).getTime() >= cutoff)
       : [];
-    stored.employees = Array.isArray(stored.employees) ? stored.employees : [];
+    stored.employees = Array.isArray(stored.employees)
+      ? stored.employees.map((employee) => ({
+        ...employee,
+        joiningDate: employee.joiningDate || today(),
+        salaryMonths: employee.salaryMonths && typeof employee.salaryMonths === "object" ? employee.salaryMonths : {}
+      }))
+      : [];
     stored.activity = Array.isArray(stored.activity) ? stored.activity : [];
     stored.subAdmins = Array.isArray(stored.subAdmins) ? stored.subAdmins : [];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
@@ -75,7 +81,7 @@ function monthStarts(count = 6) {
   start.setHours(0, 0, 0, 0);
   return Array.from({ length: count }, (_, index) => {
     const month = new Date(start);
-    month.setMonth(start.getMonth() + index);
+    month.setMonth(start.getMonth() - index);
     return month;
   });
 }
@@ -85,6 +91,21 @@ function monthDays(monthStart) {
   const month = monthStart.getMonth();
   const total = new Date(year, month + 1, 0).getDate();
   return Array.from({ length: total }, (_, index) => dateISO(new Date(year, month, index + 1)));
+}
+
+function dayState(day) {
+  const person = employee();
+  const record = recordFor(day);
+  if (day > today()) return { className: "is-future", label: "Future", disabled: true };
+  if (person?.joiningDate && day < person.joiningDate) return { className: "is-not-started", label: "Before join", disabled: true };
+  if (record) {
+    if (!record.reviewed) return { className: "is-pending", label: "Pending", disabled: true };
+    return record.status === "present"
+      ? { className: "is-approved", label: "Approved", disabled: true }
+      : { className: "is-absent", label: "Rejected", disabled: true };
+  }
+  if (day === today()) return { className: "", label: "Mark", disabled: false };
+  return { className: "is-absent", label: "Absent", disabled: true };
 }
 
 function renderWorkerMonth(monthStart) {
@@ -99,12 +120,13 @@ function renderWorkerMonth(monthStart) {
       <div class="worker-calendar-grid">
         ${Array.from({ length: blanks }, () => `<span class="calendar-blank"></span>`).join("")}
         ${days.map((day) => {
-          const record = recordFor(day);
           const isPastStoredLimit = new Date(`${day}T00:00:00`).getTime() < Date.now() - SIX_MONTHS_MS;
+          const state = dayState(day);
+          const disabled = isPastStoredLimit || state.disabled;
           return `
-            <button type="button" class="${record ? record.reviewed ? "is-approved" : "is-pending" : ""}" data-worker-date="${day}" ${isPastStoredLimit ? "disabled" : ""}>
+            <button type="button" class="${state.className}" data-worker-date="${day}" ${disabled ? "disabled" : ""}>
               <strong>${formatDay(day)}</strong>
-              <span>${record ? record.reviewed ? "Approved" : "Pending" : "Mark"}</span>
+              <span>${state.label}</span>
             </button>
           `;
         }).join("")}
@@ -131,7 +153,8 @@ function renderCalendar() {
     <div class="worker-calendar-legend">
       <span class="pending">Pending</span>
       <span class="approved">Approved</span>
-      <span>Normal</span>
+      <span class="absent">Absent / rejected</span>
+      <span>Today only</span>
     </div>
     <div class="worker-months">
       ${monthStarts(6).map(renderWorkerMonth).join("")}
@@ -145,7 +168,16 @@ function refreshFromStorage() {
 }
 
 function markDate(day) {
-  if (!employee() || recordFor(day)) return;
+  const person = employee();
+  if (!person || recordFor(day)) return;
+  if (day !== today()) {
+    qs("#workerMessage").textContent = "Only today's date can be marked for attendance.";
+    return;
+  }
+  if (person.joiningDate && day < person.joiningDate) {
+    qs("#workerMessage").textContent = "Attendance starts from your joining date.";
+    return;
+  }
   state.attendance.push({
     id: uid("att"),
     employeeId: activeEmployeeId,
@@ -174,7 +206,7 @@ qs("#workerLoginForm").addEventListener("submit", (event) => {
     return;
   }
   activeEmployeeId = person.id;
-  qs("#workerMessage").textContent = `Welcome ${person.name}. Tap a date to mark attendance.`;
+  qs("#workerMessage").textContent = `Welcome ${person.name}. Tap today to mark attendance.`;
   event.currentTarget.reset();
   renderCalendar();
 });

@@ -16,6 +16,9 @@ window.smartHotelServices.inventory = (() => {
   let currentStaffId = "";
   let simpleSelectedDate = todayKey();
   let simpleCalendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  let simpleProductText = "";
+  let simpleCustomUnit = "KG";
+  let activeSimpleReportInsight = null;
 
   function uid(prefix) {
     return `${prefix}-${Math.random().toString(16).slice(2, 8)}${Date.now().toString(16).slice(-4)}`;
@@ -357,12 +360,17 @@ window.smartHotelServices.inventory = (() => {
 
   function renderSelects() {
     const productOptions = state.products.map((item) => `<option value="${item.id}">${escapeHtml(item.name)} (${escapeHtml(item.unit)})</option>`).join("");
+    const simpleOptions = state.products.map((item) => `<option value="${escapeHtml(item.name)}">${escapeHtml(item.category)} | ${escapeHtml(item.unit)}</option>`).join("");
     const stockProductSelect = qs("#stockEntryForm select[name='productId']");
     const graphSelect = qs("#productGraphSelect");
-    const simpleProductSelect = qs("#simpleProductSelect");
+    const simpleProductInput = qs("#simpleProductInput");
+    const simpleUnitInput = qs("#simpleUnitInput");
     stockProductSelect.innerHTML = productOptions;
     graphSelect.innerHTML = productOptions;
-    simpleProductSelect.innerHTML = productOptions || `<option value="">Add a product first</option>`;
+    qs("#simpleProductOptions").innerHTML = simpleOptions;
+    if (!simpleProductText) simpleProductText = state.products[0]?.name || "";
+    simpleProductInput.value = simpleProductText;
+    simpleUnitInput.value = simpleCustomUnit;
     if (!selectedGraphProduct || !productById(selectedGraphProduct)) selectedGraphProduct = state.products[0]?.id || "";
     graphSelect.value = selectedGraphProduct;
 
@@ -378,6 +386,42 @@ window.smartHotelServices.inventory = (() => {
 
   function shortDate(key) {
     return dateFromKey(key).toLocaleDateString([], { day: "2-digit", month: "short", year: "numeric" });
+  }
+
+  function normalizeSimpleProductName(value) {
+    return String(value || "").replace(/\s+\([^)]*\)$/g, "").trim();
+  }
+
+  function productByName(name) {
+    const normalized = normalizeSimpleProductName(name).toLowerCase();
+    return state.products.find((item) => item.name.toLowerCase() === normalized);
+  }
+
+  function ensureSimpleCustomProduct(name) {
+    const cleanName = normalizeSimpleProductName(name);
+    const existing = productByName(cleanName);
+    if (existing) return existing;
+    const index = state.products.length % productColors.length;
+    const unit = String(qs("#simpleUnitInput")?.value || simpleCustomUnit || "Piece").trim() || "Piece";
+    const item = {
+      id: uid("prod"),
+      name: cleanName,
+      category: "Other Kitchen Items",
+      unit,
+      supplier: "Simple custom item",
+      price: 0,
+      stock: 0,
+      lowAlert: 0,
+      expiryDate: "",
+      image: "",
+      color: productColors[index],
+      createdAt: dateTimeNow()
+    };
+    state.products.push(item);
+    simpleProductText = item.name;
+    simpleCustomUnit = item.unit;
+    addActivity("Product", "Admin", `Created custom simple item: ${item.name}`);
+    return item;
   }
 
   function simpleEntries() {
@@ -506,28 +550,117 @@ window.smartHotelServices.inventory = (() => {
     });
   }
 
+  function combinedReportTotals(data) {
+    return data.reduce((totals, item) => {
+      totals.buy += Number(item.buy || 0);
+      totals.sell += Number(item.sell || 0);
+      totals.buyQty += Number(item.buyQty || 0);
+      totals.sellQty += Number(item.sellQty || 0);
+      return totals;
+    }, { buy: 0, sell: 0, buyQty: 0, sellQty: 0 });
+  }
+
+  function reportPeriodPayload(title, period, totals) {
+    const net = Number(totals.sell || 0) - Number(totals.buy || 0);
+    return {
+      mode: "net",
+      title,
+      period,
+      status: net >= 0 ? "profit" : "loss",
+      kind: net >= 0 ? "Profit" : "Loss",
+      amount: Math.abs(net),
+      net,
+      buy: Number(totals.buy || 0),
+      sell: Number(totals.sell || 0),
+      buyQty: Number(totals.buyQty || 0),
+      sellQty: Number(totals.sellQty || 0)
+    };
+  }
+
+  function reportDataByType(type) {
+    const titleMap = {
+      weekly: "Weekly graph",
+      monthly: "Monthly graph",
+      yearly: "Yearly graph"
+    };
+    if (type === "monthly") {
+      return {
+        title: titleMap.monthly,
+        period: simpleCalendarMonth.toLocaleDateString([], { month: "long", year: "numeric" }),
+        data: currentMonthBuckets()
+      };
+    }
+    if (type === "yearly") {
+      const year = new Date().getFullYear();
+      return { title: titleMap.yearly, period: String(year), data: yearlyBuckets() };
+    }
+    return { title: titleMap.weekly, period: "Selected 7 days", data: weeklyBuckets() };
+  }
+
+  function encodedReportPayload(title, period, totals) {
+    return encodeURIComponent(JSON.stringify(reportPeriodPayload(title, period, totals)));
+  }
+
+  function decodedReportPayload(rawPayload) {
+    try {
+      return JSON.parse(decodeURIComponent(rawPayload || ""));
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function clampNumber(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function inlineReportCard(payload, x, y) {
+    const isProfit = payload.status === "profit";
+    const tone = isProfit ? "profit" : "loss";
+    return `
+      <g class="simple-report-inline-card ${tone}" transform="translate(${x} ${y})">
+        <rect width="132" height="86" rx="12"></rect>
+        <text class="period" x="14" y="24">${escapeHtml(payload.period)}</text>
+        <text class="result ${tone}" x="14" y="46">${escapeHtml(payload.kind)} ${money(payload.amount)}</text>
+        <text class="buy" x="14" y="64">Buy ${money(payload.buy)}</text>
+        <text class="sell" x="14" y="78">Sell ${money(payload.sell)}</text>
+      </g>
+    `;
+  }
+
   function renderSimpleDualChart(data, label) {
     const max = Math.max(...data.flatMap((item) => [item.buy, item.sell]), 1);
     const step = 640 / Math.max(data.length, 1);
+    const selected = activeSimpleReportInsight?.mode === "net" && activeSimpleReportInsight.title === label
+      ? activeSimpleReportInsight
+      : null;
     const bars = data.map((item, index) => {
       const groupX = 44 + index * step;
       const buyHeight = item.buy ? Math.max(8, (item.buy / max) * 160) : 0;
       const sellHeight = item.sell ? Math.max(8, (item.sell / max) * 160) : 0;
+      const buyTextY = Math.max(20, 210 - buyHeight);
+      const sellTextY = Math.max(20, 210 - sellHeight);
+      const buyLabel = `${label} ${item.label} buy ${money(item.buy)}, quantity ${qty(item.buyQty)}`;
+      const sellLabel = `${label} ${item.label} sell ${money(item.sell)}, quantity ${qty(item.sellQty)}`;
+      const payload = encodedReportPayload(label, item.label, item);
+      const card = selected?.period === item.label
+        ? inlineReportCard(selected, clampNumber(groupX - 46, 4, 584), 238)
+        : `<text class="chart-label simple-report-label" tabindex="0" role="button" aria-label="${escapeHtml(label)} ${escapeHtml(item.label)} profit or loss" data-simple-report-period="${payload}" x="${groupX + 20}" y="244" text-anchor="middle">${escapeHtml(item.label)}</text>`;
       return `
-        <rect x="${groupX}" y="${218 - buyHeight}" width="18" height="${buyHeight}" rx="6" fill="#0f9f6e"></rect>
-        <rect x="${groupX + 22}" y="${218 - sellHeight}" width="18" height="${sellHeight}" rx="6" fill="#dc2626"></rect>
-        <text x="${groupX + 20}" y="244" text-anchor="middle" class="chart-label">${escapeHtml(item.label)}</text>
+        <rect class="simple-report-period" tabindex="0" role="button" aria-label="${escapeHtml(label)} ${escapeHtml(item.label)} profit or loss" data-simple-report-period="${payload}" x="${groupX - 10}" y="32" width="72" height="216" rx="12"></rect>
+        <rect class="simple-report-bar buy" tabindex="0" role="button" aria-label="${escapeHtml(buyLabel)}" data-simple-report-period="${payload}" data-simple-report-bar data-report-title="${escapeHtml(label)}" data-report-period="${escapeHtml(item.label)}" data-report-kind="Buy" data-report-amount="${Number(item.buy || 0)}" data-report-qty="${Number(item.buyQty || 0)}" x="${groupX}" y="${218 - buyHeight}" width="18" height="${buyHeight}" rx="6" fill="#0f9f6e"><title>${escapeHtml(buyLabel)}</title></rect>
+        <rect class="simple-report-bar sell" tabindex="0" role="button" aria-label="${escapeHtml(sellLabel)}" data-simple-report-period="${payload}" data-simple-report-bar data-report-title="${escapeHtml(label)}" data-report-period="${escapeHtml(item.label)}" data-report-kind="Sell" data-report-amount="${Number(item.sell || 0)}" data-report-qty="${Number(item.sellQty || 0)}" x="${groupX + 22}" y="${218 - sellHeight}" width="18" height="${sellHeight}" rx="6" fill="#dc2626"><title>${escapeHtml(sellLabel)}</title></rect>
+        ${item.buy ? `<text x="${groupX + 9}" y="${buyTextY}" text-anchor="middle" class="chart-value">${money(item.buy).replace("₹", "")}</text>` : ""}
+        ${item.sell ? `<text x="${groupX + 31}" y="${sellTextY}" text-anchor="middle" class="chart-value">${money(item.sell).replace("₹", "")}</text>` : ""}
+        ${card}
       `;
     }).join("");
+    const totalCard = selected?.period === "Total" ? inlineReportCard(selected, 292, 238) : "";
     return `
-      <svg viewBox="0 0 720 280" role="img" aria-label="${escapeHtml(label)}">
+      <svg viewBox="0 0 720 340" role="img" aria-label="${escapeHtml(label)}">
         <line x1="34" y1="218" x2="690" y2="218" stroke="#dbe5ef" stroke-width="2"></line>
         ${bars}
+        ${totalCard}
       </svg>
-      <div class="legend-list">
-        <span class="legend-chip"><i class="legend-dot" style="--dot-color: #0f9f6e"></i>Buy</span>
-        <span class="legend-chip"><i class="legend-dot" style="--dot-color: #dc2626"></i>Sell</span>
-      </div>
     `;
   }
 
@@ -548,9 +681,17 @@ window.smartHotelServices.inventory = (() => {
         <span>${escapeHtml(label)}</span>
       </article>
     `).join("");
-    qs("#simpleWeeklyGraph").innerHTML = renderSimpleDualChart(weeklyBuckets(), "Weekly simple inventory graph");
-    qs("#simpleMonthlyGraph").innerHTML = renderSimpleDualChart(currentMonthBuckets(), "Monthly simple inventory graph");
-    qs("#simpleYearlyGraph").innerHTML = renderSimpleDualChart(yearlyBuckets(), "Yearly simple inventory graph");
+    renderSimpleReportInsight();
+    qs("#simpleWeeklyGraph").innerHTML = renderSimpleDualChart(weeklyBuckets(), "Weekly graph");
+    qs("#simpleMonthlyGraph").innerHTML = renderSimpleDualChart(currentMonthBuckets(), "Monthly graph");
+    qs("#simpleYearlyGraph").innerHTML = renderSimpleDualChart(yearlyBuckets(), "Yearly graph");
+  }
+
+  function renderSimpleReportInsight() {
+    const panel = qs("#simpleReportInsight");
+    if (!panel) return;
+    panel.className = "simple-report-insight is-hidden";
+    panel.innerHTML = "";
   }
 
   function renderSimpleInventory() {
@@ -1044,17 +1185,21 @@ window.smartHotelServices.inventory = (() => {
   }
 
   function selectedSimpleProduct() {
-    const productId = qs("#simpleProductSelect").value || state.products[0]?.id || "";
-    return productById(productId);
+    const typedName = normalizeSimpleProductName(qs("#simpleProductInput")?.value || simpleProductText);
+    if (!typedName) return null;
+    const existing = productByName(typedName);
+    if (existing) {
+      simpleProductText = existing.name;
+      simpleCustomUnit = existing.unit;
+      return existing;
+    }
+    return ensureSimpleCustomProduct(typedName);
   }
 
   function saveSimpleBuy(form) {
     const item = selectedSimpleProduct();
     if (!item) {
-      alert("Add a product in Advance first.");
-      activeView = "advance";
-      activeAdvanceView = "products";
-      renderAll();
+      alert("Type or select an item name first.");
       return;
     }
     const data = new FormData(form);
@@ -1090,6 +1235,8 @@ window.smartHotelServices.inventory = (() => {
     item.stock = Number(item.stock || 0) + quantity;
     item.price = entry.unitCost;
     if (supplier) item.supplier = supplier;
+    simpleProductText = item.name;
+    simpleCustomUnit = item.unit;
     state.entries.push(entry);
     addActivity("Simple buy", "Admin", `${item.name}: ${qty(quantity, item.unit)} bought for ${money(amount)} on ${simpleSelectedDate}`);
     form.reset();
@@ -1100,10 +1247,7 @@ window.smartHotelServices.inventory = (() => {
   function saveSimpleSell(form) {
     const item = selectedSimpleProduct();
     if (!item) {
-      alert("Add a product in Advance first.");
-      activeView = "advance";
-      activeAdvanceView = "products";
-      renderAll();
+      alert("Type or select an item name first.");
       return;
     }
     const data = new FormData(form);
@@ -1139,6 +1283,8 @@ window.smartHotelServices.inventory = (() => {
       createdAt: dateTimeNow()
     };
     item.stock = entry.remainingQty;
+    simpleProductText = item.name;
+    simpleCustomUnit = item.unit;
     state.entries.push(entry);
     addActivity("Simple sell", "Admin", `${item.name}: ${qty(quantity, item.unit)} sold for ${money(amount)} on ${simpleSelectedDate}`);
     form.reset();
@@ -1318,6 +1464,33 @@ window.smartHotelServices.inventory = (() => {
       qs("#simpleReportsPanel").setAttribute("aria-hidden", "true");
     }
 
+    const reportTotalButton = event.target.closest("[data-simple-report-total]");
+    if (reportTotalButton) {
+      const report = reportDataByType(reportTotalButton.dataset.simpleReportTotal);
+      activeSimpleReportInsight = reportPeriodPayload(report.title, "Total", combinedReportTotals(report.data));
+      renderSimpleReports();
+      return;
+    }
+
+    const reportPeriod = event.target.closest("[data-simple-report-period]");
+    if (reportPeriod) {
+      const payload = decodedReportPayload(reportPeriod.dataset.simpleReportPeriod);
+      if (!payload) return;
+      activeSimpleReportInsight = payload;
+      renderSimpleReports();
+      return;
+    }
+
+    const reportBar = event.target.closest("[data-simple-report-bar]");
+    if (reportBar) {
+      const payload = decodedReportPayload(reportBar.dataset.simpleReportPeriod);
+      if (payload) {
+        activeSimpleReportInsight = payload;
+        renderSimpleReports();
+      }
+      return;
+    }
+
     const fillButton = event.target.closest("[data-inv-login-fill]");
     if (fillButton) {
       const staff = state.employees.find((item) => item.id === fillButton.dataset.invLoginFill);
@@ -1455,6 +1628,19 @@ window.smartHotelServices.inventory = (() => {
     qs("#simpleSellForm").addEventListener("submit", (event) => {
       event.preventDefault();
       saveSimpleSell(event.currentTarget);
+    });
+
+    qs("#simpleProductInput").addEventListener("input", (event) => {
+      simpleProductText = event.currentTarget.value;
+      const existing = productByName(simpleProductText);
+      if (existing) {
+        simpleCustomUnit = existing.unit;
+        qs("#simpleUnitInput").value = existing.unit;
+      }
+    });
+
+    qs("#simpleUnitInput").addEventListener("input", (event) => {
+      simpleCustomUnit = event.currentTarget.value;
     });
 
     qs("#inventorySearch").addEventListener("input", (event) => {

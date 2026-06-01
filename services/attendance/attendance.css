@@ -415,6 +415,7 @@
 }
 
 .worker-hero {
+  overflow: hidden;
   border-radius: 8px;
   padding: 24px;
   background:
@@ -443,6 +444,27 @@
   margin: 0;
   color: rgba(255, 255, 255, .82);
   font-weight: 760;
+}
+
+.worker-guidance {
+  animation: workerGuidanceSlide 5s ease forwards;
+  white-space: nowrap;
+}
+
+@keyframes workerGuidanceSlide {
+  0% {
+    opacity: 0;
+    transform: translateX(-28px);
+  }
+  18%,
+  72% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(36px);
+  }
 }
 
 .worker-calendar-panel {
@@ -475,6 +497,11 @@
   color: var(--att-green);
 }
 
+.worker-calendar-legend .absent {
+  background: rgba(220, 38, 38, .1);
+  color: var(--att-red);
+}
+
 .worker-calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -499,6 +526,7 @@
 
 .employee-month-head {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 10px;
   align-items: center;
@@ -539,14 +567,60 @@
   color: #ffffff;
 }
 
+.worker-calendar-grid button.is-absent,
 .attendance-day.is-absent {
   border-color: rgba(239, 68, 68, .26);
   background: rgba(239, 68, 68, .1);
   color: #991b1b;
 }
 
+.worker-calendar-grid button.is-future,
 .attendance-day.is-future {
   opacity: .55;
+}
+
+.worker-calendar-grid button.is-not-started,
+.attendance-day.is-not-started {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+  color: #94a3b8;
+}
+
+.employee-month-pay {
+  display: grid;
+  grid-template-columns: minmax(110px, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.employee-month-pay input {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid var(--att-line);
+  border-radius: 8px;
+  padding: 0 10px;
+  color: var(--att-ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.month-pay-button {
+  min-height: 34px;
+  border: 1px solid rgba(220, 38, 38, .22);
+  border-radius: 8px;
+  padding: 0 10px;
+  background: rgba(220, 38, 38, .08);
+  color: var(--att-red);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.month-pay-button.is-paid {
+  border-color: rgba(18, 149, 87, .26);
+  background: var(--att-green);
+  color: #ffffff;
 }
 
 .calendar-blank {
@@ -742,6 +816,11 @@
 .attendance-full-legend .absent {
   background: rgba(239, 68, 68, .12);
   color: #991b1b;
+}
+
+.attendance-full-legend .not-started {
+  background: #f1f5f9;
+  color: #64748b;
 }
 
 .employee-full-months {

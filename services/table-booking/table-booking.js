@@ -41,6 +41,7 @@ window.smartHotelServices.booking = (() => {
   let adminCalendarModal = null;
   let adminCanvasClickTimer = null;
   let roomConfirmationOpen = false;
+  let expandedRoomBookingId = "";
 
   let tablePricing = [
   ];
@@ -114,6 +115,7 @@ window.smartHotelServices.booking = (() => {
       if (Array.isArray(stored.roomBookings)) {
         roomBookings = stored.roomBookings;
       }
+      pruneRoomBookings();
     } catch {
       // Keep the built-in demo data if shared customer media is unavailable.
     }
@@ -127,6 +129,7 @@ window.smartHotelServices.booking = (() => {
         [...stored.roomBookings, ...roomBookings].forEach((booking) => merged.set(booking.id, booking));
         roomBookings = Array.from(merged.values());
       }
+      pruneRoomBookings();
       localStorage.setItem(PUBLIC_BOOKING_KEY, JSON.stringify({
         version: 1,
         updatedAt: new Date().toISOString(),
@@ -162,12 +165,33 @@ window.smartHotelServices.booking = (() => {
     return roomStatus[roomId];
   }
 
+  function bookingTime(booking) {
+    const stamp = booking?.createdAt || booking?.confirmedAt || booking?.requestedAt || booking?.fromDate || booking?.date || "";
+    const parsed = Date.parse(stamp);
+    if (!Number.isNaN(parsed)) return parsed;
+    const idTime = String(booking?.id || "").match(/\d{10,}/)?.[0];
+    return idTime ? Number(idTime) : 0;
+  }
+
+  function pruneRoomBookings() {
+    roomBookings = roomBookings
+      .slice()
+      .sort((a, b) => bookingTime(b) - bookingTime(a))
+      .slice(0, 30);
+  }
+
   function roomBookingItems(roomId) {
-    return roomBookings.filter((booking) => booking.roomId === roomId);
+    return roomBookings
+      .filter((booking) => booking.roomId === roomId)
+      .sort((a, b) => bookingTime(b) - bookingTime(a))
+      .slice(0, 30);
   }
 
   function pendingRoomBookings() {
-    return roomBookings.filter((booking) => booking.status === "pending");
+    return roomBookings
+      .filter((booking) => booking.status === "pending")
+      .sort((a, b) => bookingTime(b) - bookingTime(a))
+      .slice(0, 30);
   }
 
   function confirmRoomBooking(bookingId, code) {
@@ -491,26 +515,34 @@ window.smartHotelServices.booking = (() => {
                   <span>Admin room note</span>
                   <textarea data-room-note="${room.id}" placeholder="Example: Room repainting today, available after 6PM">${escapeBookingHtml(control.note || "")}</textarea>
                 </label>
-                <div class="room-booking-mini-list">
-                  ${bookingsForRoom.map((booking) => {
-                    const approved = bookingApproved(booking);
-                    const statusLabel = approved ? "Booked" : "Pending";
-                    return `
-                    <div class="room-booking-mini-item ${approved ? "is-approved" : "is-pending"}">
-                      <div>
-                        <strong>${statusLabel}: ${escapeBookingHtml(booking.name || "Guest")}</strong>
-                        <span>${escapeBookingHtml(booking.mobile || "No mobile")} | ${booking.fromDate || booking.date} to ${booking.toDate || booking.date}</span>
-                        ${approved && booking.securityCode ? `<em>Security code: ${escapeBookingHtml(booking.securityCode)}</em>` : ""}
-                      </div>
-                      ${approved ? "" : `
-                        <div class="room-booking-approve">
-                          <input class="booking-code-input" data-booking-code-input="${escapeBookingHtml(booking.id)}" placeholder="Security code" />
-                          <button class="tiny-button" type="button" data-confirm-room-booking="${escapeBookingHtml(booking.id)}">Confirm</button>
+                <div class="room-booking-live-wrap">
+                  <button class="room-live-button" type="button" data-toggle-room-live="${room.id}">
+                    <span>Live</span>
+                    <strong>${bookingsForRoom.length}</strong>
+                  </button>
+                  ${expandedRoomBookingId === room.id ? `
+                    <div class="room-booking-mini-list">
+                      ${bookingsForRoom.map((booking) => {
+                        const approved = bookingApproved(booking);
+                        const statusLabel = approved ? "Booked" : "Pending";
+                        return `
+                        <div class="room-booking-mini-item ${approved ? "is-approved" : "is-pending"}">
+                          <div>
+                            <strong>${statusLabel}: ${escapeBookingHtml(booking.name || "Guest")}</strong>
+                            <span>${escapeBookingHtml(booking.mobile || "No mobile")} | ${booking.fromDate || booking.date} to ${booking.toDate || booking.date}</span>
+                            ${approved && booking.securityCode ? `<em>Security code: ${escapeBookingHtml(booking.securityCode)}</em>` : ""}
+                          </div>
+                          ${approved ? "" : `
+                            <div class="room-booking-approve">
+                              <input class="booking-code-input" data-booking-code-input="${escapeBookingHtml(booking.id)}" placeholder="Security code" />
+                              <button class="tiny-button" type="button" data-confirm-room-booking="${escapeBookingHtml(booking.id)}">Confirm</button>
+                            </div>
+                          `}
                         </div>
-                      `}
+                      `;
+                      }).join("") || `<span>No room bookings yet</span>`}
                     </div>
-                  `;
-                  }).join("") || `<span>No room bookings yet</span>`}
+                  ` : `<p class="room-live-note">Click Live to see the latest 30 booker details.</p>`}
                 </div>
                 <div class="room-picture-strip">
                   ${photos.map((photo, index) => `
@@ -1211,6 +1243,13 @@ window.smartHotelServices.booking = (() => {
       const modeButton = event.target.closest("[data-media-mode]");
       if (modeButton) {
         selection.mediaMode = modeButton.dataset.mediaMode;
+        renderBookingModule();
+        return;
+      }
+
+      const liveButton = event.target.closest("[data-toggle-room-live]");
+      if (liveButton) {
+        expandedRoomBookingId = expandedRoomBookingId === liveButton.dataset.toggleRoomLive ? "" : liveButton.dataset.toggleRoomLive;
         renderBookingModule();
         return;
       }
