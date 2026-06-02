@@ -234,7 +234,8 @@
   display: grid;
 }
 
-.photo-lightbox img {
+.photo-lightbox img,
+.photo-lightbox video {
   max-width: min(96vw, 1200px);
   max-height: 86vh;
   border: 4px solid #ffffff;

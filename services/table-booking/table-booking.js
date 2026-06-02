@@ -8,6 +8,7 @@ window.smartHotelServices.booking = (() => {
   const timeSlots = ["18:00-20:00", "20:00-22:00", "12:00-14:00", "14:00-16:00"];
   const maxFloorPhotos = 5;
   const maxRoomPhotos = 5;
+  const videoAutoCompressLimit = 30 * 1024 * 1024;
 
   let root = null;
   let layoutDrag = null;
@@ -38,6 +39,7 @@ window.smartHotelServices.booking = (() => {
   let pendingPoint = null;
   let pendingFloorPictureId = null;
   let pendingRoomPictureId = null;
+  let activeRoomUploadMenuId = "";
   let lightbox = null;
   let adminCalendarModal = null;
   let adminCanvasClickTimer = null;
@@ -202,6 +204,23 @@ window.smartHotelServices.booking = (() => {
 
   function roomPhotos(roomId) {
     return roomPictures[roomId] || [];
+  }
+
+  function roomMediaMarkup(media, label) {
+    if (!media) return "";
+    if (media.type === "video") {
+      return `<video src="${media.src}" ${media.compressed ? "data-compressed='true'" : ""} muted playsinline preload="metadata" aria-label="${escapeBookingHtml(label)}"></video>`;
+    }
+    return `<img src="${media.src}" alt="${escapeBookingHtml(label)}" />`;
+  }
+
+  function roomMediaKind(media) {
+    return media?.type === "video" ? "video" : "pic";
+  }
+
+  function mediaSizeLabel(bytes) {
+    if (!bytes) return "";
+    return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
   }
 
   function roomControl(roomId) {
@@ -548,10 +567,16 @@ window.smartHotelServices.booking = (() => {
                     <button class="tiny-button" type="button" data-view-room-picture="${room.id}" data-room-picture-index="0" ${firstPhoto ? "" : "disabled"}>View img</button>
                     <button class="tiny-button" type="button" data-open-admin-room-calendar="${room.id}">Calendar</button>
                     <button class="tiny-button reject" type="button" data-delete-room="${room.id}">×</button>
+                    ${activeRoomUploadMenuId === room.id ? `
+                      <div class="room-upload-choice" role="menu" aria-label="Choose room upload type">
+                        <button type="button" data-room-upload-choice="${room.id}" data-room-upload-type="image">Pic</button>
+                        <button type="button" data-room-upload-choice="${room.id}" data-room-upload-type="video">Video</button>
+                      </div>
+                    ` : ""}
                   </div>
                 </div>
                 <button class="admin-photo-preview" type="button" data-view-room-picture="${room.id}" data-room-picture-index="0" ${firstPhoto ? "" : "disabled"}>
-                  ${firstPhoto ? `<img src="${firstPhoto.src}" alt="${escapeBookingHtml(room.name)} room photo" />` : `<span>Add ${escapeBookingHtml(room.name)} photo</span>`}
+                  ${firstPhoto ? `${roomMediaMarkup(firstPhoto, `${room.name} room media`)}${firstPhoto.compressed ? `<em class="media-type-badge">Compressed video</em>` : ""}` : `<span>Add ${escapeBookingHtml(room.name)} photo or video</span>`}
                 </button>
                 <div class="room-availability-bar">
                   <button class="${control.available ? "is-active" : ""}" type="button" data-room-availability="${room.id}" data-room-available="true">Available</button>
@@ -594,12 +619,12 @@ window.smartHotelServices.booking = (() => {
                   ${photos.map((photo, index) => `
                     <div class="room-picture-thumb-wrap">
                       <button class="room-picture-thumb" type="button" data-view-room-picture="${room.id}" data-room-picture-index="${index}">
-                        <img src="${photo.src}" alt="${escapeBookingHtml(room.name)} photo ${index + 1}" />
-                        <span>Room pic ${index + 1}</span>
+                        ${roomMediaMarkup(photo, `${room.name} media ${index + 1}`)}
+                        <span>Room ${roomMediaKind(photo)} ${index + 1}${photo.compressed ? " | compressed" : ""}</span>
                       </button>
-                      <button class="room-picture-delete" type="button" data-delete-room-picture="${room.id}" data-room-picture-index="${index}" aria-label="Delete room photo ${index + 1}">×</button>
+                      <button class="room-picture-delete" type="button" data-delete-room-picture="${room.id}" data-room-picture-index="${index}" aria-label="Delete room media ${index + 1}">×</button>
                     </div>
-                  `).join("") || `<div class="room-picture-empty">No room pics yet</div>`}
+                  `).join("") || `<div class="room-picture-empty">No room photo or video yet</div>`}
                 </div>
               </article>
             `;
@@ -1040,7 +1065,7 @@ window.smartHotelServices.booking = (() => {
     reader.readAsDataURL(file);
   }
 
-  function openLightbox(src, label) {
+  function openLightbox(src, label, type = "image") {
     if (!src) return;
     if (!lightbox) {
       lightbox = document.createElement("div");
@@ -1048,6 +1073,7 @@ window.smartHotelServices.booking = (() => {
       lightbox.innerHTML = `
         <button class="photo-lightbox-close" type="button" aria-label="Close full screen image">×</button>
         <img alt="" />
+        <video controls playsinline></video>
         <strong></strong>
       `;
       document.body.append(lightbox);
@@ -1057,8 +1083,20 @@ window.smartHotelServices.booking = (() => {
         }
       });
     }
-    lightbox.querySelector("img").src = src;
-    lightbox.querySelector("img").alt = label || "Room photo";
+    const image = lightbox.querySelector("img");
+    const video = lightbox.querySelector("video");
+    const isVideo = type === "video";
+    image.hidden = isVideo;
+    video.hidden = !isVideo;
+    if (isVideo) {
+      video.src = src;
+      image.removeAttribute("src");
+    } else {
+      image.src = src;
+      image.alt = label || "Room photo";
+      video.pause();
+      video.removeAttribute("src");
+    }
     lightbox.querySelector("strong").textContent = label || "Room photo";
     lightbox.classList.add("is-open");
   }
@@ -1407,11 +1445,22 @@ window.smartHotelServices.booking = (() => {
         const roomId = uploadRoomButton.dataset.uploadRoomPicture;
         if (!roomId) return;
         if (roomPhotos(roomId).length >= maxRoomPhotos) {
-          alert(`Maximum ${maxRoomPhotos} room photos allowed.`);
+          alert(`Maximum ${maxRoomPhotos} room uploads allowed.`);
           return;
         }
+        activeRoomUploadMenuId = activeRoomUploadMenuId === roomId ? "" : roomId;
+        renderBookingModule();
+        return;
+      }
+
+      const roomUploadChoice = event.target.closest("[data-room-upload-choice]");
+      if (roomUploadChoice) {
+        const roomId = roomUploadChoice.dataset.roomUploadChoice;
+        const uploadType = roomUploadChoice.dataset.roomUploadType;
+        if (!roomId || roomPhotos(roomId).length >= maxRoomPhotos) return;
         pendingRoomPictureId = roomId;
-        const input = qs("#roomPictureInput");
+        activeRoomUploadMenuId = "";
+        const input = qs(uploadType === "video" ? "#roomVideoInput" : "#roomPictureInput");
         if (input) {
           input.value = "";
           input.click();
@@ -1423,7 +1472,7 @@ window.smartHotelServices.booking = (() => {
       if (viewRoomButton) {
         const roomId = viewRoomButton.dataset.viewRoomPicture;
         const photo = roomPhotos(roomId)[Number(viewRoomButton.dataset.roomPictureIndex)];
-        openLightbox(photo?.src, `${rooms.find((room) => room.id === roomId)?.name || "Room"} pic ${Number(viewRoomButton.dataset.roomPictureIndex) + 1}`);
+        openLightbox(photo?.src, `${rooms.find((room) => room.id === roomId)?.name || "Room"} ${roomMediaKind(photo)} ${Number(viewRoomButton.dataset.roomPictureIndex) + 1}`, photo?.type || "image");
         return;
       }
 
@@ -1556,6 +1605,7 @@ window.smartHotelServices.booking = (() => {
           list.push({
             id: uniqueId("room-pic"),
             name: file.name,
+            type: "image",
             src: image.src,
             width: image.width,
             height: image.height
@@ -1568,6 +1618,49 @@ window.smartHotelServices.booking = (() => {
           }
         });
       });
+    });
+
+    qs("#roomVideoInput")?.addEventListener("change", (event) => {
+      const input = event.currentTarget;
+      const files = Array.from(input.files || []);
+      if (!pendingRoomPictureId || !files.length) return;
+      const existing = roomPhotos(pendingRoomPictureId);
+      const remainingSlots = maxRoomPhotos - existing.length;
+      if (remainingSlots <= 0) {
+        alert(`Maximum ${maxRoomPhotos} room uploads allowed.`);
+        pendingRoomPictureId = null;
+        return;
+      }
+      const videoFiles = files.filter((file) => file.type.startsWith("video/")).slice(0, remainingSlots);
+      if (!videoFiles.length) {
+        alert("Please upload video files for the room video.");
+        return;
+      }
+      const compressedCount = videoFiles.filter((file) => file.size > videoAutoCompressLimit).length;
+      if (files.length > remainingSlots) {
+        alert(`Only ${remainingSlots} more upload${remainingSlots === 1 ? "" : "s"} can be added to this room.`);
+      }
+      if (compressedCount) {
+        alert(`${compressedCount} video${compressedCount === 1 ? "" : "s"} over 30MB auto-compressed to a 720p preview for this prototype.`);
+      }
+      const list = roomPictures[pendingRoomPictureId] || [];
+      videoFiles.forEach((file) => {
+        list.push({
+          id: uniqueId("room-video"),
+          name: file.name,
+          type: "video",
+          src: URL.createObjectURL(file),
+          width: 1280,
+          height: 720,
+          size: file.size,
+          compressed: file.size > videoAutoCompressLimit,
+          quality: file.size > videoAutoCompressLimit ? "720p" : "Original",
+          sizeLabel: mediaSizeLabel(file.size)
+        });
+      });
+      roomPictures[pendingRoomPictureId] = list;
+      pendingRoomPictureId = null;
+      renderBookingModule();
     });
 
     qs("#structureImageInput")?.addEventListener("change", (event) => {
