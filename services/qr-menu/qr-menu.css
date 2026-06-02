@@ -144,6 +144,10 @@
   opacity: .42;
 }
 
+.qr-customer-page .phone-tabs.is-single-page {
+  display: none;
+}
+
 .scan-tools-panel {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 190px;

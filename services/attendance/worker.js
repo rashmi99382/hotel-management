@@ -86,6 +86,23 @@ function monthStarts(count = 6) {
   });
 }
 
+function monthNumber(monthStart) {
+  return monthStart.getFullYear() * 12 + monthStart.getMonth();
+}
+
+function monthStartFromIso(iso) {
+  const match = String(iso || "").match(/^(\d{4})-(\d{2})-\d{2}$/);
+  if (!match) return null;
+  const monthStart = new Date(Number(match[1]), Number(match[2]) - 1, 1);
+  monthStart.setHours(0, 0, 0, 0);
+  return Number.isNaN(monthStart.getTime()) ? null : monthStart;
+}
+
+function monthStartsForEmployee(person, count = 6) {
+  const joiningMonth = monthStartFromIso(person?.joiningDate) || monthStartFromIso(today());
+  return monthStarts(count).filter((month) => monthNumber(month) >= monthNumber(joiningMonth));
+}
+
 function monthDays(monthStart) {
   const year = monthStart.getFullYear();
   const month = monthStart.getMonth();
@@ -122,9 +139,13 @@ function renderWorkerMonth(monthStart) {
         ${days.map((day) => {
           const isPastStoredLimit = new Date(`${day}T00:00:00`).getTime() < Date.now() - SIX_MONTHS_MS;
           const state = dayState(day);
-          const disabled = isPastStoredLimit || state.disabled;
+          const hardDisabled = isPastStoredLimit
+            || state.className === "is-future"
+            || state.className === "is-not-started"
+            || (state.className === "is-absent" && state.label === "Absent");
+          const softLocked = state.disabled && !hardDisabled;
           return `
-            <button type="button" class="${state.className}" data-worker-date="${day}" ${disabled ? "disabled" : ""}>
+            <button type="button" class="${state.className}" data-worker-date="${day}" ${softLocked ? `aria-disabled="true"` : ""} ${hardDisabled ? "disabled" : ""}>
               <strong>${formatDay(day)}</strong>
               <span>${state.label}</span>
             </button>
@@ -157,7 +178,7 @@ function renderCalendar() {
       <span>Today only</span>
     </div>
     <div class="worker-months">
-      ${monthStarts(6).map(renderWorkerMonth).join("")}
+      ${monthStartsForEmployee(person, 6).map(renderWorkerMonth).join("")}
     </div>
   `;
 }
@@ -213,7 +234,10 @@ qs("#workerLoginForm").addEventListener("submit", (event) => {
 
 document.addEventListener("click", (event) => {
   const dateButton = event.target.closest("[data-worker-date]");
-  if (dateButton) markDate(dateButton.dataset.workerDate);
+  if (dateButton) {
+    if (dateButton.getAttribute("aria-disabled") === "true" || dateButton.disabled) return;
+    markDate(dateButton.dataset.workerDate);
+  }
   if (event.target.closest("[data-worker-logout]")) {
     activeEmployeeId = "";
     qs("#workerMessage").textContent = "";

@@ -1,7 +1,7 @@
 const DEMO_EMAIL = "rashmiranjanabc241947@gmail.com";
 const DEMO_PASSWORD = "Rashmi@123";
 const SESSION_KEY = "smartHotelPrototypeSession";
-const ASSET_VERSION = "pdf-six-work-v4";
+const ASSET_VERSION = "inventory-simple-only-v2";
 const PROFILE_KEY = "smartHotelAdminProfile";
 const PUBLIC_HASHES = new Set(["", "home", "design", "product", "plans", "business", "education", "career", "help"]);
 

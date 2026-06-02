@@ -423,7 +423,9 @@ window.smartHotelServices.menu = (() => {
 
   function renderFloorsAndRooms() {
     const floorSelect = qs("#roomForm select[name='floor']");
-    floorSelect.innerHTML = state.floors.map((floor) => `<option value="${floor}">${floor}</option>`).join("");
+    if (floorSelect) {
+      floorSelect.innerHTML = state.floors.map((floor) => `<option value="${floor}">${floor}</option>`).join("");
+    }
     renderRoomViews();
   }
 
@@ -722,7 +724,7 @@ window.smartHotelServices.menu = (() => {
       renderAll();
     });
 
-    qs("#floorForm").addEventListener("submit", (event) => {
+    qs("#floorForm")?.addEventListener("submit", (event) => {
       event.preventDefault();
       const floor = String(new FormData(event.currentTarget).get("floor")).trim();
       if (floor && !state.floors.includes(floor)) state.floors.push(floor);
@@ -731,7 +733,7 @@ window.smartHotelServices.menu = (() => {
       renderAll();
     });
 
-    qs("#roomForm").addEventListener("submit", (event) => {
+    qs("#roomForm")?.addEventListener("submit", (event) => {
       event.preventDefault();
       const data = new FormData(event.currentTarget);
       state.rooms.push({

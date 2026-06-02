@@ -323,10 +323,7 @@ window.smartHotelServices.inventory = (() => {
   }
 
   function renderTabs() {
-    if (!["simple", "advance"].includes(activeView)) {
-      activeAdvanceView = activeView;
-      activeView = "advance";
-    }
+    activeView = "simple";
     qsa("[data-inventory-view]").forEach((button) => {
       button.classList.toggle("is-active", button.dataset.inventoryView === activeView);
     });
@@ -336,10 +333,6 @@ window.smartHotelServices.inventory = (() => {
     });
     const mainView = qs(`#inv${titleCase(activeView)}View`);
     if (mainView) mainView.classList.add("is-active");
-    if (activeView === "advance") {
-      const advanceView = qs(`#inv${titleCase(activeAdvanceView)}View`);
-      if (advanceView) advanceView.classList.add("is-active");
-    }
   }
 
   function renderStats() {
@@ -1429,14 +1422,13 @@ window.smartHotelServices.inventory = (() => {
   function handleRootClick(event) {
     const viewButton = event.target.closest("[data-inventory-view]");
     if (viewButton) {
-      activeView = viewButton.dataset.inventoryView;
+      activeView = "simple";
       renderAll();
     }
 
     const advanceButton = event.target.closest("[data-inventory-advance-view]");
     if (advanceButton) {
-      activeView = "advance";
-      activeAdvanceView = advanceButton.dataset.inventoryAdvanceView;
+      activeView = "simple";
       renderAll();
     }
 

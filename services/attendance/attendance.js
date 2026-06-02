@@ -85,12 +85,15 @@ window.smartHotelServices.attendance = (() => {
         ...defaultState(),
         ...parsed,
         employees: Array.isArray(parsed.employees)
-          ? parsed.employees.map((employee) => ({
-            ...employee,
-            photo: employee.photo || "",
-            joiningDate: employee.joiningDate || todayKey(),
-            salaryMonths: pruneSalaryMonths(employee.salaryMonths)
-          }))
+          ? parsed.employees.map((employee) => {
+            const joiningDate = employee.joiningDate || todayKey();
+            return {
+              ...employee,
+              photo: employee.photo || "",
+              joiningDate,
+              salaryMonths: pruneSalaryMonths(employee.salaryMonths, joiningDate)
+            };
+          })
           : [],
         subAdmins: Array.isArray(parsed.subAdmins) ? parsed.subAdmins : [],
         attendance,
@@ -199,6 +202,23 @@ window.smartHotelServices.attendance = (() => {
     });
   }
 
+  function monthNumber(monthStart) {
+    return monthStart.getFullYear() * 12 + monthStart.getMonth();
+  }
+
+  function monthStartFromIso(iso) {
+    const match = String(iso || "").match(/^(\d{4})-(\d{2})-\d{2}$/);
+    if (!match) return null;
+    const monthStart = new Date(Number(match[1]), Number(match[2]) - 1, 1);
+    monthStart.setHours(0, 0, 0, 0);
+    return Number.isNaN(monthStart.getTime()) ? null : monthStart;
+  }
+
+  function monthStartsForEmployee(employee, count = 6) {
+    const joiningMonth = monthStartFromIso(employee?.joiningDate) || monthStartFromIso(todayKey());
+    return monthStarts(count).filter((month) => monthNumber(month) >= monthNumber(joiningMonth));
+  }
+
   function daysInMonth(monthStart) {
     const year = monthStart.getFullYear();
     const month = monthStart.getMonth();
@@ -214,9 +234,9 @@ window.smartHotelServices.attendance = (() => {
     return `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, "0")}`;
   }
 
-  function pruneSalaryMonths(months) {
+  function pruneSalaryMonths(months, joiningDate = "") {
     if (!months || typeof months !== "object") return {};
-    const allowed = new Set(monthStarts(6).map(monthKeyFromDate));
+    const allowed = new Set(monthStartsForEmployee({ joiningDate }, 6).map(monthKeyFromDate));
     return Object.fromEntries(Object.entries(months).filter(([key]) => allowed.has(key)));
   }
 
@@ -621,6 +641,7 @@ window.smartHotelServices.attendance = (() => {
       });
     }
     attendanceCalendarModal.dataset.employeeId = employeeId;
+    const visibleMonths = monthStartsForEmployee(employee, 6);
     attendanceCalendarModal.querySelector(".attendance-calendar-body").innerHTML = `
       <span class="attendance-kicker">Six-month attendance</span>
       <h3>${escapeHtml(employee.name)}</h3>
@@ -632,7 +653,9 @@ window.smartHotelServices.attendance = (() => {
         <span class="not-started">Before joining</span>
       </div>
       <div class="employee-full-months">
-        ${monthStarts(6).map((month) => renderMonthCalendar(employee, month)).join("")}
+        ${visibleMonths.length
+          ? visibleMonths.map((month) => renderMonthCalendar(employee, month)).join("")
+          : `<div class="empty-portal"><h3>Attendance starts from joining month</h3><p>No month is available before ${escapeHtml(employee.joiningDate || todayKey())}.</p></div>`}
       </div>
     `;
     attendanceCalendarModal.classList.add("is-open");

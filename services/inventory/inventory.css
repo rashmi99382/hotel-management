@@ -107,10 +107,6 @@
   background: #ffffff;
 }
 
-.inventory-mode-tabs {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
 .inventory-tabs button {
   min-height: 46px;
   border: 0;

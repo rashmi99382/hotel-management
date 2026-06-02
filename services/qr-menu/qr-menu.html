@@ -160,41 +160,6 @@
           </form>
           <div id="popupList" class="popup-list"></div>
         </div>
-
-        <div class="qr-section">
-          <div class="qr-section-title">
-            <h3>5. Multi-Floor Hotel Management</h3>
-            <span>3D building view and normal room list</span>
-          </div>
-          <form id="floorForm" class="stack-form qr-inline-form">
-            <input name="floor" placeholder="Example: 3rd Floor" required />
-            <button class="primary-button" type="submit">Add floor</button>
-          </form>
-          <form id="roomForm" class="stack-form room-form">
-            <select name="floor" required></select>
-            <select name="position" required>
-              <option value="left">Left-side room</option>
-              <option value="right">Right-side room</option>
-              <option value="hall">Hall room</option>
-            </select>
-            <select name="type" required>
-              <option value="AC">AC</option>
-              <option value="Non-AC">Non-AC</option>
-              <option value="Deluxe">Deluxe</option>
-              <option value="Premium">Premium</option>
-            </select>
-            <input name="name" placeholder="Room name" required />
-            <input name="price" type="number" min="1" placeholder="Room price" required />
-            <input name="image" type="url" placeholder="Room image URL" />
-            <input name="video" type="url" placeholder="Room video URL" />
-            <select name="available">
-              <option value="available">Available</option>
-              <option value="booked">Booked</option>
-              <option value="maintenance">Maintenance</option>
-            </select>
-            <button class="primary-button" type="submit">Add room</button>
-          </form>
-        </div>
       </article>
 
       <article id="customerExperiencePanel" class="panel customer-menu-panel customer-experience-panel is-hidden" aria-label="Customer QR Experience">

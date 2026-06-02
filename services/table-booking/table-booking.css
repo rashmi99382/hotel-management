@@ -27,6 +27,46 @@
   pointer-events: auto;
 }
 
+.booking-qr-mode-float {
+  position: fixed;
+  right: 22px;
+  bottom: 84px;
+  z-index: 44;
+  width: auto;
+  pointer-events: none;
+}
+
+.booking-qr-mode-float > * {
+  pointer-events: auto;
+}
+
+.booking-qr-mode-toggle {
+  display: inline-grid;
+  place-items: center;
+  min-width: 76px;
+  min-height: 44px;
+  border: 1px solid rgba(37, 99, 235, .24);
+  border-radius: 999px;
+  padding: 0 18px;
+  background: #ffffff;
+  color: var(--brand);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 950;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, .18);
+}
+
+.booking-qr-mode-toggle span {
+  display: block;
+}
+
+.booking-qr-mode-float.is-disabled .booking-qr-mode-toggle {
+  border-color: rgba(220, 38, 38, .44);
+  background: #dc2626;
+  color: #ffffff;
+  box-shadow: 0 18px 36px rgba(220, 38, 38, .22);
+}
+
 .room-confirmation-toggle {
   display: inline-grid;
   grid-template-columns: 1fr auto;

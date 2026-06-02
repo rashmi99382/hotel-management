@@ -1198,15 +1198,24 @@ function closeMediaModal() {
 }
 
 function renderTabs() {
+  const tabs = qs("#scanTabs");
   const foodButton = qs("[data-scan-page='food']");
   const hotelButton = qs("[data-scan-page='hotel']");
-  foodButton.disabled = !restaurantActive();
-  hotelButton.disabled = !hotelActive();
-  setScanPage(restaurantActive() ? "food" : "hotel");
+  const foodEnabled = restaurantActive();
+  const hotelEnabled = hotelActive();
+  foodButton.disabled = !foodEnabled;
+  hotelButton.disabled = !hotelEnabled;
+  foodButton.hidden = !foodEnabled;
+  hotelButton.hidden = !hotelEnabled;
+  tabs.classList.toggle("is-single-page", (foodEnabled && !hotelEnabled) || (!foodEnabled && hotelEnabled));
+  tabs.classList.toggle("is-hidden", !foodEnabled && !hotelEnabled);
+  setScanPage(foodEnabled ? "food" : "hotel");
 }
 
 function setScanPage(page) {
-  const targetPage = page === "hotel" && hotelActive() ? "hotel" : "food";
+  const foodEnabled = restaurantActive();
+  const hotelEnabled = hotelActive();
+  const targetPage = page === "hotel" && hotelEnabled ? "hotel" : foodEnabled ? "food" : "hotel";
   document.querySelectorAll("[data-scan-page]").forEach((button) => {
     button.classList.toggle("is-active", button.dataset.scanPage === targetPage);
   });

@@ -2,6 +2,7 @@ window.smartHotelServices = window.smartHotelServices || {};
 
 window.smartHotelServices.booking = (() => {
   const PUBLIC_BOOKING_KEY = "smartTableBookingCustomerState";
+  const QR_MENU_KEY = "smartQrMenuSystemState";
   const todayISO = new Date().toISOString().slice(0, 10);
   const adminWhatsAppNumber = "919999999999";
   const timeSlots = ["18:00-20:00", "20:00-22:00", "12:00-14:00", "14:00-16:00"];
@@ -144,6 +145,51 @@ window.smartHotelServices.booking = (() => {
     } catch {
       // Large local images may exceed storage; the live admin view still keeps them for this session.
     }
+  }
+
+  function loadQrMenuState() {
+    try {
+      return JSON.parse(localStorage.getItem(QR_MENU_KEY) || "{}");
+    } catch {
+      return {};
+    }
+  }
+
+  function saveQrMenuState(nextState) {
+    try {
+      localStorage.setItem(QR_MENU_KEY, JSON.stringify(nextState));
+    } catch {
+      // Keep booking admin usable even if the browser storage is full.
+    }
+  }
+
+  function bookingHotelEnabledForQr() {
+    const qrState = loadQrMenuState();
+    const settings = qrState.settings || {};
+    return settings.hotelEnabled !== false && settings.mode !== "restaurant";
+  }
+
+  function setBookingHotelEnabledForQr(enabled) {
+    const qrState = loadQrMenuState();
+    const previousSettings = qrState.settings || {};
+    const nextSettings = {
+      restaurantEnabled: previousSettings.restaurantEnabled !== false,
+      hotelEnabled: Boolean(enabled),
+      mode: previousSettings.mode || "both",
+      theme: previousSettings.theme || "light"
+    };
+
+    if (enabled) {
+      nextSettings.restaurantEnabled = true;
+      nextSettings.mode = "both";
+    } else {
+      nextSettings.restaurantEnabled = true;
+      nextSettings.mode = "restaurant";
+    }
+
+    qrState.settings = { ...previousSettings, ...nextSettings };
+    saveQrMenuState(qrState);
+    window.dispatchEvent(new CustomEvent("smartQrMenuModeUpdated", { detail: { hotelEnabled: Boolean(enabled) } }));
   }
 
   function firstRoomForFloor(floorId) {
@@ -604,6 +650,18 @@ window.smartHotelServices.booking = (() => {
     `;
   }
 
+  function renderBookingQrModeFloat() {
+    const panel = qs("#bookingQrModeFloat");
+    if (!panel) return;
+    const enabled = bookingHotelEnabledForQr();
+    panel.classList.toggle("is-disabled", !enabled);
+    panel.innerHTML = `
+      <button class="booking-qr-mode-toggle" type="button" data-toggle-booking-qr-hotel aria-pressed="${enabled ? "true" : "false"}" title="${enabled ? "Hotel booking is visible after QR scan" : "Hotel booking is hidden after QR scan"}">
+        <span>Hotel</span>
+      </button>
+    `;
+  }
+
   function renderChairs(capacity, shape = "round") {
     const chairCount = Math.min(Math.max(Number(capacity) || 1, 1), 16);
     const radius = shape === "banquet" ? 72 : chairCount > 8 ? 64 : 55;
@@ -921,6 +979,7 @@ window.smartHotelServices.booking = (() => {
     renderPricingList();
     renderBookingAdminList();
     renderRoomConfirmationFloat();
+    renderBookingQrModeFloat();
     updateSelectedBookingInfo();
     publishCustomerSnapshot();
   }
@@ -1209,6 +1268,13 @@ window.smartHotelServices.booking = (() => {
         if (toggleConfirmations) {
           roomConfirmationOpen = !roomConfirmationOpen;
           renderRoomConfirmationFloat();
+          return;
+        }
+
+        const qrHotelToggle = event.target.closest("[data-toggle-booking-qr-hotel]");
+        if (qrHotelToggle) {
+          setBookingHotelEnabledForQr(!bookingHotelEnabledForQr());
+          renderBookingQrModeFloat();
           return;
         }
 

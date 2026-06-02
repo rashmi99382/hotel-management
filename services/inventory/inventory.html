@@ -6,11 +6,6 @@
 
     <div id="inventoryStats" class="inventory-stats"></div>
 
-    <div class="inventory-tabs inventory-mode-tabs" role="tablist" aria-label="Inventory modes">
-      <button class="is-active" type="button" data-inventory-view="simple">Simple</button>
-      <button type="button" data-inventory-view="advance">Advance</button>
-    </div>
-
     <section id="invSimpleView" class="inventory-view is-active">
       <div class="simple-inventory-layout">
         <article class="inventory-card simple-calendar-card">
@@ -107,24 +102,6 @@
           </div>
         </article>
       </div>
-    </section>
-
-    <section id="invAdvanceView" class="inventory-view">
-      <article class="inventory-card advance-control-card">
-        <div class="inventory-card-heading">
-          <div>
-            <h3>Advance Inventory</h3>
-            <span>Detailed product, supplier, staff access, graphs and full reports stay here.</span>
-          </div>
-        </div>
-        <div class="inventory-advance-tabs" role="tablist" aria-label="Advanced inventory sections">
-          <button class="is-active" type="button" data-inventory-advance-view="products">Product & Supplier</button>
-          <button type="button" data-inventory-advance-view="admin">Admin Users</button>
-          <button type="button" data-inventory-advance-view="staff">Staff Entry</button>
-          <button type="button" data-inventory-advance-view="analytics">Graphs</button>
-          <button type="button" data-inventory-advance-view="reports">Full Reports</button>
-        </div>
-      </article>
     </section>
 
     <section id="invAdminView" class="inventory-view">
