@@ -516,7 +516,7 @@ window.smartHotelServices.jobs = (() => {
       renderJobs();
     });
 
-    qs("#seedJobsButton").addEventListener("click", seedJobs);
+    qs("#seedJobsButton")?.addEventListener("click", seedJobs);
     root.removeEventListener("click", handleRootClick);
     root.addEventListener("click", handleRootClick);
   }

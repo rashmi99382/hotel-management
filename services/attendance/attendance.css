@@ -313,6 +313,34 @@
   grid-column: 1 / -1;
 }
 
+.sub-admin-login-form {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--att-line);
+}
+
+.sub-admin-login-head {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #eef5ff, #f8fbff);
+  border: 1px solid var(--att-line);
+}
+
+.sub-admin-login-head strong {
+  color: var(--att-ink);
+}
+
+.sub-admin-login-head span {
+  color: var(--att-blue);
+  font-size: 12px;
+  font-weight: 850;
+}
+
 .login-form-grid {
   grid-template-columns: 1fr;
 }

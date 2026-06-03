@@ -61,6 +61,16 @@
             </select>
             <button class="secondary-button" type="submit">Create sub-admin</button>
           </form>
+          <form id="subAdminLoginForm" class="att-form sub-admin-login-form">
+            <div class="sub-admin-login-head">
+              <strong>Sub-admin login</strong>
+              <span id="currentReviewerBadge">Active reviewer: Admin</span>
+            </div>
+            <input name="userId" placeholder="Sub-admin User ID" required />
+            <input name="password" type="password" placeholder="Password" required />
+            <button class="primary-button" type="submit">Login as reviewer</button>
+          </form>
+          <p id="subAdminLoginMessage" class="att-message">Sub-admin can approve pending attendance after login.</p>
           <div id="subAdminList" class="sub-admin-list"></div>
         </article>
       </div>

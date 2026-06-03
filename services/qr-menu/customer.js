@@ -1014,7 +1014,7 @@ function showBookingConfirmation(data, booking) {
       </div>
       <div class="booking-confirm-actions">
         <button class="secondary-button" type="button" data-close-qr-bill>OK</button>
-        <button class="scan-view-button" type="button" data-download-booking-bill>Download e-bill</button>
+        <button class="scan-view-button" type="button" data-download-booking-bill>Download</button>
         <button class="order-link scan-send-bill-button" type="button" data-show-booking-qr>Scan QR bill</button>
       </div>
       <div id="bookingBillQrArea" class="booking-bill-qr-area is-hidden"></div>
@@ -1233,15 +1233,57 @@ function actionTile(href, label, value) {
   `;
 }
 
-function footerTile(href, icon, label) {
+function footerTile(href, icon, label, tone = "") {
   if (!href) return "";
   const target = href.startsWith("tel:") ? "_self" : "_blank";
   return `
-    <a class="scan-footer-link" href="${escapeHtml(href)}" target="${target}" rel="noreferrer">
+    <a class="scan-footer-link ${escapeHtml(tone)}" href="${escapeHtml(href)}" target="${target}" rel="noreferrer" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">
       <span>${escapeHtml(icon)}</span>
       <strong>${escapeHtml(label)}</strong>
     </a>
   `;
+}
+
+function whatsappHref(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (!digits) return "";
+  const normalized = digits.length === 10 ? `91${digits}` : digits;
+  return `https://wa.me/${normalized}`;
+}
+
+function customerSocialTiles() {
+  const hotel = state.hotel || {};
+  const phoneHref = whatsappHref(hotel.contact);
+  const locationHref = safeUrl(hotel.location);
+  const instagramHref = safeUrl(hotel.instagram);
+  const facebookHref = safeUrl(hotel.facebook);
+  const linkedinHref = safeUrl(hotel.linkedin);
+  const pinterestHref = safeUrl(hotel.pinterest);
+  const xHref = safeUrl(hotel.xTwitter);
+  const youtubeHref = safeUrl(hotel.youtube);
+  const attendanceHref = safeUrl(hotel.attendanceLink);
+  return [
+    footerTile(linkedinHref, "in", "LinkedIn", "tone-linkedin"),
+    footerTile(instagramHref, "ig", "Instagram", "tone-instagram"),
+    footerTile(facebookHref, "f", "Facebook", "tone-facebook"),
+    footerTile(pinterestHref, "p", "Pinterest", "tone-pinterest"),
+    footerTile(xHref, "x", "X", "tone-x"),
+    footerTile(youtubeHref, "yt", "YouTube", "tone-youtube"),
+    footerTile(locationHref, "lo", "Location", "tone-location"),
+    footerTile(attendanceHref, "at", "Attendance", "tone-attendance"),
+    footerTile(phoneHref, "wa", "WhatsApp", "tone-whatsapp")
+  ].filter(Boolean).join("");
+}
+
+function renderScanSocialFooter() {
+  const footer = qs("#scanSocialFooter");
+  if (!footer) return;
+  const socialTiles = customerSocialTiles();
+  footer.innerHTML = socialTiles ? `
+    <div class="scan-footer-panel">
+      <div class="scan-footer-links">${socialTiles}</div>
+    </div>
+  ` : "";
 }
 
 function renderHotelInfo() {
@@ -1254,23 +1296,7 @@ function renderHotelInfo() {
   const roomPrices = allRooms.map((room) => Number(room.price)).filter(Boolean);
   const bestPrice = roomPrices.length ? Math.min(...roomPrices) : 0;
   const roomTypes = [...new Set(allRooms.map((room) => room.type).filter(Boolean))].slice(0, 3).join(" / ");
-  const phoneHref = hotel.contact ? `tel:${phoneNumber()}` : "";
-  const locationHref = safeUrl(hotel.location);
-  const reviewHref = safeUrl(hotel.googleReview);
-  const instagramHref = safeUrl(hotel.instagram);
-  const facebookHref = safeUrl(hotel.facebook);
-  qs("#scanHotelInfo").innerHTML = `
-    <div class="scan-footer-panel">
-      <span class="scan-section-kicker">Quick links</span>
-      <div class="scan-footer-links">
-        ${footerTile(workerAttendanceUrl(), "AT", "Attendance")}
-        ${footerTile(locationHref, "LO", "Location")}
-        ${footerTile(instagramHref, "IG", "Instagram")}
-        ${footerTile(facebookHref, "FB", "Facebook")}
-        ${footerTile(phoneHref, "PH", hotel.contact || "Call admin")}
-      </div>
-    </div>
-  `;
+  qs("#scanHotelInfo").innerHTML = "";
 
   qs("#scanHotelGallery").innerHTML = "";
 
@@ -1336,7 +1362,9 @@ function showPopup(forceReview = false) {
   popupIndex += 1;
   qs("#scanPopupType").textContent = popup.type;
   qs("#scanPopupTitle").textContent = popup.itemName;
-  qs("#scanPopupImage").innerHTML = popup.image ? `<img src="${escapeHtml(popup.image)}" alt="${escapeHtml(popup.itemName)}" />` : escapeHtml(popup.itemName);
+  qs("#scanPopupImage").innerHTML = popup.video
+    ? `<video controls muted playsinline src="${escapeHtml(popup.video)}"></video>`
+    : popup.image ? `<img src="${escapeHtml(popup.image)}" alt="${escapeHtml(popup.itemName)}" />` : escapeHtml(popup.itemName);
   qs("#scanPopupOffer").textContent = popup.offer;
   qs("#scanPopupAction").textContent = "Order on WhatsApp";
   qs("#scanPopupAction").href = `https://wa.me/${phoneNumber()}?text=${encodeURIComponent(`Offer order\n${popup.itemName}\n${popup.offer}`)}`;
@@ -1377,6 +1405,7 @@ function boot() {
   renderTabs();
   renderMenu();
   renderHotelInfo();
+  renderScanSocialFooter();
   renderBookingCustomerView();
   startPopupTimer();
 

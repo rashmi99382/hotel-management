@@ -411,6 +411,10 @@ window.smartHotelServices.attendance = (() => {
   }
 
   function renderSubAdmins() {
+    const reviewerBadge = qs("#currentReviewerBadge");
+    if (reviewerBadge) {
+      reviewerBadge.textContent = `Active reviewer: ${currentReviewer.name}`;
+    }
     qs("#subAdminList").innerHTML = state.subAdmins.map((subAdmin) => `
       <article class="sub-admin-card">
         <div>
@@ -748,8 +752,9 @@ window.smartHotelServices.attendance = (() => {
   function subAdminLogin(form) {
     const data = new FormData(form);
     const userId = String(data.get("userId")).trim();
-    const password = String(data.get("password"));
-    const subAdmin = state.subAdmins.find((item) => item.userId === userId && item.password === password);
+    const normalizedUserId = userId.toLowerCase();
+    const password = String(data.get("password")).trim();
+    const subAdmin = state.subAdmins.find((item) => item.userId.toLowerCase() === normalizedUserId && item.password === password);
     if (!subAdmin) {
       addActivity("Sub-admin", "Unknown", userId, "Failed");
       qs("#subAdminLoginMessage").textContent = "Invalid sub-admin User ID or password.";

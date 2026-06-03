@@ -12,6 +12,22 @@
   color: var(--job-ink);
 }
 
+.jobs-button-host {
+  overflow: hidden;
+  border: 1px solid var(--job-line);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 22px 54px rgba(15, 23, 42, .08);
+}
+
+.jobs-button-frame {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2009 / 783;
+  border: 0;
+  background: #ffffff;
+}
+
 .jobs-hero {
   display: flex;
   justify-content: space-between;
@@ -366,14 +382,12 @@
 }
 
 @media (max-width: 780px) {
-  .jobs-hero,
   .job-panel-heading,
   .admin-job-banner,
   .application-card {
     grid-template-columns: 1fr;
   }
 
-  .jobs-hero,
   .job-panel-heading {
     align-items: flex-start;
     flex-direction: column;

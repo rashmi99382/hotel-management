@@ -345,13 +345,17 @@
 }
 
 .qr-customer-page .scan-food-card {
-  grid-template-columns: 150px minmax(0, 1fr);
-  overflow: hidden;
+  grid-template-columns: 168px minmax(0, 1fr);
+  overflow: visible;
   border-color: rgba(148, 163, 184, .24);
-  border-radius: 8px;
-  padding: 0;
-  background: #ffffff;
-  box-shadow: 0 18px 42px rgba(23, 32, 51, .1);
+  border-radius: 28px;
+  padding: 14px;
+  background:
+    radial-gradient(circle at 16% 16%, rgba(255, 255, 255, .92), transparent 34%),
+    linear-gradient(135deg, #ffffff 0%, #fffdf9 55%, #f8fbff 100%);
+  box-shadow:
+    0 22px 48px rgba(23, 32, 51, .12),
+    inset 0 1px 0 rgba(255, 255, 255, .9);
 }
 
 .qr-customer-page .scan-food-card.featured {
@@ -360,11 +364,27 @@
 }
 
 .qr-customer-page .scan-food-thumb {
-  width: 100%;
-  height: 100%;
-  min-height: 176px;
-  border: 0;
-  border-radius: 0;
+  width: 156px;
+  height: 156px;
+  min-height: 0;
+  align-self: center;
+  border: 5px solid #ffffff;
+  border-radius: 50%;
+  box-shadow:
+    0 18px 34px rgba(15, 23, 42, .18),
+    0 0 0 1px rgba(37, 99, 235, .12);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.qr-customer-page .scan-food-card:hover .scan-food-thumb {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow:
+    0 24px 42px rgba(15, 23, 42, .22),
+    0 0 0 1px rgba(37, 99, 235, .18);
+}
+
+.qr-customer-page .scan-food-thumb img {
+  border-radius: 50%;
 }
 
 .scan-food-body {
@@ -755,25 +775,34 @@
   gap: 12px;
 }
 
+.scan-social-footer {
+  margin-top: 22px;
+}
+
 .scan-footer-links {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 10px;
+  justify-content: center;
 }
 
 .scan-footer-link {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
-  align-items: center;
-  gap: 9px;
-  min-height: 58px;
-  border: 1px solid rgba(37, 99, 235, .18);
-  border-radius: 8px;
-  padding: 8px;
-  background: #ffffff;
+  justify-items: center;
+  width: 46px;
+  height: 46px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  background: transparent;
   color: var(--scan-ink);
   text-decoration: none;
-  box-shadow: 0 12px 24px rgba(23, 32, 51, .07);
+  box-shadow: none;
+  transition: transform 160ms ease;
+}
+
+.scan-footer-link:hover {
+  transform: translateY(-2px);
 }
 
 .scan-footer-link span {
@@ -781,18 +810,51 @@
   place-items: center;
   width: 42px;
   height: 42px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--scan-blue), var(--scan-green));
+  border-radius: 999px;
+  background: #0f172a;
   color: #ffffff;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 950;
+  text-transform: uppercase;
 }
 
 .scan-footer-link strong {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
   overflow: hidden;
-  text-overflow: ellipsis;
+  clip-path: inset(50%);
   white-space: nowrap;
-  font-size: 13px;
+}
+
+.scan-footer-link.tone-instagram span {
+  background: linear-gradient(135deg, #f97316, #db2777 48%, #7c3aed);
+}
+
+.scan-footer-link.tone-facebook span,
+.scan-footer-link.tone-linkedin span {
+  background: linear-gradient(135deg, #2563eb, #0f5fb8);
+}
+
+.scan-footer-link.tone-pinterest span,
+.scan-footer-link.tone-youtube span {
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+}
+
+.scan-footer-link.tone-x span {
+  background: linear-gradient(135deg, #0f172a, #334155);
+}
+
+.scan-footer-link.tone-location span {
+  background: linear-gradient(135deg, #16a34a, #0891b2);
+}
+
+.scan-footer-link.tone-attendance span {
+  background: linear-gradient(135deg, #7c3aed, #2563eb);
+}
+
+.scan-footer-link.tone-whatsapp span {
+  background: linear-gradient(135deg, #128c4b, #22c55e);
 }
 
 .scan-hotel-gallery figure {
@@ -1749,6 +1811,15 @@
   font-weight: 820;
 }
 
+.popup-pill small {
+  border-radius: 999px;
+  padding: 3px 6px;
+  background: #eef2ff;
+  color: var(--brand);
+  font-size: 10px;
+  font-weight: 900;
+}
+
 .tag-pill button,
 .popup-pill button {
   border: 0;
@@ -1953,7 +2024,21 @@
   line-height: 1.45;
 }
 
+.social-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .social-links a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  border: 1px solid rgba(37, 99, 235, .18);
+  border-radius: 999px;
+  padding: 0 12px;
+  background: #ffffff;
   color: var(--brand);
   font-weight: 850;
   text-decoration: none;
@@ -2097,6 +2182,15 @@
   max-height: 72vh;
 }
 
+.popup-image video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #0f172a;
+}
+
 #scanMediaBody video {
   display: block;
   width: auto;
@@ -2232,7 +2326,10 @@
   }
 
   .qr-customer-page .scan-food-thumb {
-    min-height: 190px;
+    width: min(72vw, 240px);
+    height: min(72vw, 240px);
+    min-height: 0;
+    justify-self: center;
   }
 
   .scan-room-summary,

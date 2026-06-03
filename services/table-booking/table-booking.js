@@ -45,6 +45,7 @@ window.smartHotelServices.booking = (() => {
   let adminCanvasClickTimer = null;
   let roomConfirmationOpen = false;
   let expandedRoomBookingId = "";
+  let selectedAdminBookingDetailId = "";
 
   let tablePricing = [
   ];
@@ -270,7 +271,41 @@ window.smartHotelServices.booking = (() => {
     booking.status = "approved";
     booking.securityCode = securityCode;
     booking.confirmedAt = new Date().toISOString();
+    publishCustomerSnapshot();
     return true;
+  }
+
+  function bookingDateRange(booking) {
+    const from = booking?.fromDate || booking?.date || "";
+    const to = booking?.toDate || booking?.date || from;
+    return `${from}${to && to !== from ? ` to ${to}` : ""}`;
+  }
+
+  function adminBookingDetailMarkup(booking, room) {
+    if (!booking) {
+      return `
+        <div class="admin-calendar-selected-card is-empty">
+          <strong>Click a booked date</strong>
+          <span>Green booked dates show customer name, mobile and security code here. Yellow pending dates show the request.</span>
+        </div>
+      `;
+    }
+    const approved = bookingApproved(booking);
+    return `
+      <div class="admin-calendar-selected-card ${approved ? "is-approved" : "is-pending"}">
+        <div>
+          <span>${approved ? "Confirmed booking" : "Pending request"}</span>
+          <h4>${escapeBookingHtml(booking.name || "Guest")}</h4>
+        </div>
+        <dl>
+          <div><dt>Mobile</dt><dd>${escapeBookingHtml(booking.mobile || "No mobile")}</dd></div>
+          <div><dt>Room</dt><dd>${escapeBookingHtml(room?.name || booking.roomName || "Room")}</dd></div>
+          <div><dt>Date</dt><dd>${escapeBookingHtml(bookingDateRange(booking))}</dd></div>
+          <div><dt>Security code</dt><dd>${approved ? escapeBookingHtml(booking.securityCode || "Not set") : "Waiting for admin"}</dd></div>
+        </dl>
+        ${booking.note ? `<p>${escapeBookingHtml(booking.note)}</p>` : ""}
+      </div>
+    `;
   }
 
   function addDays(date, days) {
@@ -555,6 +590,8 @@ window.smartHotelServices.booking = (() => {
             const control = roomControl(room.id);
             const floor = floors.find((item) => item.id === room.floorId);
             const bookingsForRoom = roomBookingItems(room.id);
+            const pendingForRoom = bookingsForRoom.filter((booking) => !bookingApproved(booking));
+            const approvedForRoom = bookingsForRoom.filter((booking) => bookingApproved(booking));
             return `
               <article class="admin-photo-card room-control-card">
                 <div class="admin-photo-card-head">
@@ -593,27 +630,27 @@ window.smartHotelServices.booking = (() => {
                   </button>
                   ${expandedRoomBookingId === room.id ? `
                     <div class="room-booking-mini-list">
-                      ${bookingsForRoom.map((booking) => {
-                        const approved = bookingApproved(booking);
-                        const statusLabel = approved ? "Booked" : "Pending";
+                      ${pendingForRoom.map((booking) => {
                         return `
-                        <div class="room-booking-mini-item ${approved ? "is-approved" : "is-pending"}">
+                        <div class="room-booking-mini-item is-pending">
                           <div>
-                            <strong>${statusLabel}: ${escapeBookingHtml(booking.name || "Guest")}</strong>
-                            <span>${escapeBookingHtml(booking.mobile || "No mobile")} | ${booking.fromDate || booking.date} to ${booking.toDate || booking.date}</span>
-                            ${approved && booking.securityCode ? `<em>Security code: ${escapeBookingHtml(booking.securityCode)}</em>` : ""}
+                            <strong>Pending: ${escapeBookingHtml(booking.name || "Guest")}</strong>
+                            <span>${escapeBookingHtml(booking.mobile || "No mobile")} | ${escapeBookingHtml(bookingDateRange(booking))}</span>
                           </div>
-                          ${approved ? "" : `
-                            <div class="room-booking-approve">
-                              <input class="booking-code-input" data-booking-code-input="${escapeBookingHtml(booking.id)}" placeholder="Security code" />
-                              <button class="tiny-button" type="button" data-confirm-room-booking="${escapeBookingHtml(booking.id)}">Confirm</button>
-                            </div>
-                          `}
+                          <div class="room-booking-approve">
+                            <input class="booking-code-input" data-booking-code-input="${escapeBookingHtml(booking.id)}" placeholder="Security code" />
+                            <button class="tiny-button" type="button" data-confirm-room-booking="${escapeBookingHtml(booking.id)}">Confirm</button>
+                          </div>
                         </div>
                       `;
-                      }).join("") || `<span>No room bookings yet</span>`}
+                      }).join("") || `
+                        <div class="room-booking-mini-item is-clean">
+                          <strong>${approvedForRoom.length ? `${approvedForRoom.length} confirmed booking${approvedForRoom.length === 1 ? "" : "s"}` : "No pending request"}</strong>
+                          <span>Open Calendar and click a green booked date to see customer details.</span>
+                        </div>
+                      `}
                     </div>
-                  ` : `<p class="room-live-note">Click Live to see the latest 30 booker details.</p>`}
+                  ` : `<p class="room-live-note">Click Live for pending approvals. Open Calendar and click green dates for booked details.</p>`}
                 </div>
                 <div class="room-picture-strip">
                   ${photos.map((photo, index) => `
@@ -1116,6 +1153,7 @@ window.smartHotelServices.booking = (() => {
       document.body.append(adminCalendarModal);
       adminCalendarModal.addEventListener("click", (event) => {
         if (event.target === adminCalendarModal || event.target.closest(".photo-lightbox-close")) {
+          selectedAdminBookingDetailId = "";
           adminCalendarModal.classList.remove("is-open");
         }
         const dayButton = event.target.closest("[data-admin-calendar-day]");
@@ -1124,10 +1162,13 @@ window.smartHotelServices.booking = (() => {
           const id = dayButton.dataset.adminCalendarRoom;
           const bookingStatus = roomBookingDayStatus(id, day);
           if (bookingStatus === "pending" || bookingStatus === "approved") {
-            alert("This date has a customer booking request. Use the room booking list to review it.");
+            const booking = bookingForDate(id, day, bookingStatus === "approved" ? "approved" : "pending");
+            selectedAdminBookingDetailId = booking?.id || "";
+            openAdminRoomCalendar(id);
             return;
           }
           if (!roomDayStatus[id]) roomDayStatus[id] = {};
+          selectedAdminBookingDetailId = "";
           roomDayStatus[id][day] = roomDayStatus[id][day] === "closed" ? "open" : "closed";
           publishCustomerSnapshot();
           openAdminRoomCalendar(id);
@@ -1135,16 +1176,19 @@ window.smartHotelServices.booking = (() => {
       });
     }
     const days = Array.from({ length: 183 }, (_, index) => dateISO(addDays(new Date(), index)));
+    const selectedBooking = roomBookings.find((booking) => booking.id === selectedAdminBookingDetailId && booking.roomId === roomId);
     adminCalendarModal.querySelector(".admin-calendar-body").innerHTML = `
       <span class="room-map-item-type">Admin calendar</span>
       <h3>${escapeBookingHtml(room.name)}</h3>
-      <p>Click any open date to close it. Yellow means pending customer request, green means confirmed booking, red means admin closed.</p>
+      <p>Click open dates to close them. Click yellow pending or green booked dates to see customer details. This calendar shows the next 6 months.</p>
+      ${adminBookingDetailMarkup(selectedBooking, room)}
       <div class="admin-room-calendar-grid">
         ${days.map((day) => {
           const status = roomBookingDayStatus(roomId, day);
+          const booking = status === "approved" ? bookingForDate(roomId, day, "approved") : status === "pending" ? bookingForDate(roomId, day, "pending") : null;
           const label = status === "approved" ? "Booked" : status === "pending" ? "Pending" : status === "closed" ? "Closed" : "Available";
           return `
-            <button class="is-${status}" type="button" data-admin-calendar-room="${roomId}" data-admin-calendar-day="${day}">
+            <button class="is-${status} ${booking && booking.id === selectedAdminBookingDetailId ? "is-selected" : ""}" type="button" data-admin-calendar-room="${roomId}" data-admin-calendar-day="${day}">
               <strong>${formatDayLabel(day)}</strong>
               <span>${label}</span>
             </button>

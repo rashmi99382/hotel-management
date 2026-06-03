@@ -1,8 +1,9 @@
 const DEMO_EMAIL = "rashmiranjanabc241947@gmail.com";
 const DEMO_PASSWORD = "Rashmi@123";
 const SESSION_KEY = "smartHotelPrototypeSession";
-const ASSET_VERSION = "booking-media-profile-v1";
+const ASSET_VERSION = "jobs-custom-button-v1";
 const PROFILE_KEY = "smartHotelAdminProfile";
+const QR_MENU_STORAGE_KEY = "smartQrMenuSystemState";
 const PUBLIC_HASHES = new Set(["", "home", "design", "product", "plans", "business", "education", "career", "help"]);
 
 const publicView = document.querySelector("#publicView");
@@ -280,6 +281,172 @@ function escapePublicHtml(value) {
     "\"": "&quot;",
     "'": "&#39;"
   })[char]);
+}
+
+function safePublicUrl(value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  try {
+    const url = new URL(text, window.location.href);
+    return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
+function whatsappPublicUrl(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (!digits) return "";
+  const normalized = digits.length === 10 ? `91${digits}` : digits;
+  return `https://wa.me/${normalized}`;
+}
+
+const SIDEBAR_SOCIAL_FIELDS = [
+  { key: "linkedin", label: "LinkedIn", icon: "in", type: "url", placeholder: "LinkedIn page link" },
+  { key: "instagram", label: "Instagram", icon: "ig", type: "url", placeholder: "Instagram profile link" },
+  { key: "facebook", label: "Facebook", icon: "f", type: "url", placeholder: "Facebook page link" },
+  { key: "pinterest", label: "Pinterest", icon: "p", type: "url", placeholder: "Pinterest link" },
+  { key: "xTwitter", label: "X", icon: "x", type: "url", placeholder: "X / Twitter link" },
+  { key: "youtube", label: "YouTube", icon: "yt", type: "url", placeholder: "YouTube channel link" },
+  { key: "contact", label: "WhatsApp", icon: "wa", type: "tel", placeholder: "WhatsApp number" },
+  { key: "attendanceLink", label: "Attendance", icon: "at", type: "url", placeholder: "Attendance portal link" },
+  { key: "location", label: "Location", icon: "lo", type: "url", placeholder: "Google Maps / location link" }
+];
+
+function readQrHotelSettings() {
+  try {
+    return JSON.parse(localStorage.getItem(QR_MENU_STORAGE_KEY) || "{}").hotel || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveQrHotelSettings(patch) {
+  let current = {};
+  try {
+    current = JSON.parse(localStorage.getItem(QR_MENU_STORAGE_KEY) || "{}") || {};
+  } catch {
+    current = {};
+  }
+  const next = {
+    ...current,
+    hotel: {
+      ...(current.hotel || {}),
+      ...patch
+    }
+  };
+  localStorage.setItem(QR_MENU_STORAGE_KEY, JSON.stringify(next));
+  return next.hotel;
+}
+
+function readImageAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+function sidebarSocialLinks() {
+  const hotel = readQrHotelSettings();
+  return [
+    { label: "LinkedIn", icon: "in", href: safePublicUrl(hotel.linkedin) },
+    { label: "Instagram", icon: "ig", href: safePublicUrl(hotel.instagram) },
+    { label: "Facebook", icon: "f", href: safePublicUrl(hotel.facebook) },
+    { label: "Pinterest", icon: "p", href: safePublicUrl(hotel.pinterest) },
+    { label: "X", icon: "x", href: safePublicUrl(hotel.xTwitter) },
+    { label: "YouTube", icon: "yt", href: safePublicUrl(hotel.youtube) },
+    { label: "Location", icon: "lo", href: safePublicUrl(hotel.location) },
+    { label: "Attendance", icon: "at", href: safePublicUrl(hotel.attendanceLink) },
+    { label: "WhatsApp", icon: "wa", href: whatsappPublicUrl(hotel.contact) }
+  ].filter((item) => item.href);
+}
+
+function renderSidebarSocialPanel() {
+  const panel = document.querySelector("#sidebarSocialPanel");
+  if (!panel) return;
+  const hotel = readQrHotelSettings();
+  panel.innerHTML = `
+    <form class="sidebar-social-form" id="sidebarSocialForm">
+      <div class="sidebar-social-form-head">
+        <label class="sidebar-social-logo">
+          <span class="sidebar-social-logo-preview">${hotel.logo ? `<img src="${escapePublicHtml(hotel.logo)}" alt="Hotel logo" />` : "SH"}</span>
+          <input id="sidebarLogoInput" type="file" accept="image/*" />
+        </label>
+        <div>
+          <strong>Admin links</strong>
+          <span>Save icons for customer QR page</span>
+        </div>
+      </div>
+      <div class="sidebar-social-fields">
+        ${SIDEBAR_SOCIAL_FIELDS.map((field) => `
+          <label class="sidebar-social-field">
+            <span>${escapePublicHtml(field.icon)}</span>
+            <input
+              name="${escapePublicHtml(field.key)}"
+              type="${field.type === "tel" ? "tel" : "url"}"
+              value="${escapePublicHtml(hotel[field.key] || "")}"
+              placeholder="${escapePublicHtml(field.placeholder)}"
+              ${field.type === "tel" ? "inputmode=\"tel\"" : ""}
+            />
+          </label>
+        `).join("")}
+      </div>
+      <button class="sidebar-social-save" type="submit">Save links</button>
+      <small id="sidebarSocialStatus" class="sidebar-social-status" aria-live="polite"></small>
+    </form>
+  `;
+
+  const form = panel.querySelector("#sidebarSocialForm");
+  const logoInput = panel.querySelector("#sidebarLogoInput");
+  const status = panel.querySelector("#sidebarSocialStatus");
+  logoInput?.addEventListener("change", async (event) => {
+    const file = event.currentTarget.files?.[0];
+    if (!file) return;
+    const logo = await readImageAsDataUrl(file);
+    saveQrHotelSettings({ logo });
+    renderSidebarSocialPanel();
+  });
+  form?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const data = new FormData(form);
+    const patch = {};
+    SIDEBAR_SOCIAL_FIELDS.forEach((field) => {
+      patch[field.key] = String(data.get(field.key) || "").trim();
+    });
+    saveQrHotelSettings(patch);
+    if (status) status.textContent = "Saved";
+  });
+}
+
+function bindSidebarSocialLauncher() {
+  const button = document.querySelector("#sidebarSocialTrigger");
+  const panel = document.querySelector("#sidebarSocialPanel");
+  if (!button || !panel) return;
+
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    renderSidebarSocialPanel();
+    const nextOpen = !panel.classList.contains("is-open");
+    panel.classList.toggle("is-open", nextOpen);
+    button.setAttribute("aria-expanded", String(nextOpen));
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!panel.classList.contains("is-open")) return;
+    if (panel.contains(event.target) || button.contains(event.target)) return;
+    panel.classList.remove("is-open");
+    button.setAttribute("aria-expanded", "false");
+  });
+
+  window.addEventListener("storage", (event) => {
+    if (event.key !== QR_MENU_STORAGE_KEY) return;
+    renderSidebarSocialPanel();
+  });
+
+  renderSidebarSocialPanel();
 }
 
 function careerInitials(value) {
@@ -781,6 +948,7 @@ window.addEventListener("smartHotelJobsUpdated", renderPublicCareers);
 
 window.smartHotelServices = window.smartHotelServices || {};
 renderPublicCareers();
+bindSidebarSocialLauncher();
 window.smartHotelLocationDirectory.load().then(renderPublicCareers);
 window.addEventListener("hashchange", routeFromHash);
 routeFromHash();

@@ -45,6 +45,11 @@
             <input name="location" type="url" placeholder="Google Maps / location link" required />
             <input name="instagram" type="url" placeholder="Instagram link" />
             <input name="facebook" type="url" placeholder="Facebook link" />
+            <input name="linkedin" type="url" placeholder="LinkedIn link" />
+            <input name="pinterest" type="url" placeholder="Pinterest link" />
+            <input name="xTwitter" type="url" placeholder="X / Twitter link" />
+            <input name="youtube" type="url" placeholder="YouTube link" />
+            <input name="attendanceLink" type="url" placeholder="Attendance portal link" />
             <div id="hotelMediaPreview" class="hotel-media-preview"></div>
             <button class="primary-button" type="submit" id="hotelSubmitButton">Register hotel and generate QR</button>
             <p class="qr-stability-note" id="qrStabilityNote">After QR generation, future edits keep the same QR link.</p>
@@ -147,6 +152,14 @@
           <form id="popupForm" class="stack-form qr-form-grid">
             <input name="itemName" placeholder="Popup item name" required />
             <input name="image" type="url" placeholder="Popup image URL" />
+            <label class="file-control">
+              <span>Upload popup image max 3MB</span>
+              <input id="popupImageFile" type="file" accept="image/*" />
+            </label>
+            <label class="file-control">
+              <span>Upload popup video max 10MB</span>
+              <input id="popupVideoFile" type="file" accept="video/*" />
+            </label>
             <input name="offer" placeholder="Offer details" required />
             <select name="type">
               <option value="Special Offer">Special Offer</option>

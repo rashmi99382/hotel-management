@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Inbuilt Job Platform Button</title>
+<style>
+  :root{
+    --navy:#0b1537;
+    --navy2:#101d4a;
+    --ink:#0d173d;
+    --blue:#2f72ff;
+    --blue2:#1e54d7;
+    --blue3:#0d4bcf;
+    --sky:#6ea4ff;
+    --yellow:#ffc21f;
+    --yellow2:#ffd95b;
+    --shadow: rgba(13, 22, 57, .18);
+    --shadow2: rgba(13, 22, 57, .28);
+    --bg:#ffffff;
+  }
+
+  html, body {
+    margin: 0;
+    width: 100%;
+    min-height: 100%;
+    background:
+      radial-gradient(1200px 500px at 50% 35%, rgba(245,247,255,.95), rgba(255,255,255,1) 55%),
+      linear-gradient(180deg, #fff, #fbfbfd);
+    overflow: hidden;
+  }
+
+  .stage{
+    width: 100vw;
+    height: 100vh;
+    display: grid;
+    place-items: center;
+  }
+
+  .job-button{
+    width: min(99vw, 2009px);
+    aspect-ratio: 2009 / 783;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+    position: relative;
+    transform: translateZ(0);
+    transition: transform .35s cubic-bezier(.2,.8,.2,1), filter .35s cubic-bezier(.2,.8,.2,1);
+    filter: drop-shadow(0 22px 22px rgba(13,22,57,.12));
+    outline: none;
+  }
+
+  .job-button:hover,
+  .job-button:focus-visible{
+    transform: translateY(-7px) scale(1.002);
+    filter: drop-shadow(0 30px 28px rgba(13,22,57,.17));
+  }
+
+  svg{
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible;
+  }
+
+  .hover-lift{
+    transition: transform .35s cubic-bezier(.2,.8,.2,1), opacity .35s;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .job-button:hover .base-shadow{
+    opacity: .96;
+    transform: translateY(8px) scale(1.03);
+  }
+
+  .job-button:hover .briefcase-group{
+    transform: translateY(-2px) rotate(-5deg);
+  }
+
+  .job-button:hover .arrow-group{
+    transform: translateX(4px) scale(1.02);
+  }
+
+  .job-button:hover .wobble,
+  .job-button:hover .doodle{
+    opacity: 1;
+  }
+
+  .briefcase-group,
+  .arrow-group{
+    transition: transform .35s cubic-bezier(.2,.8,.2,1);
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .arrow-bounce{
+    transition: transform .35s cubic-bezier(.2,.8,.2,1);
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .job-button:hover .arrow-bounce{
+    transform: translateX(6px);
+  }
+
+  .caption{
+    user-select: none;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .job-button,
+    .hover-lift,
+    .briefcase-group,
+    .arrow-group,
+    .arrow-bounce{
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <button class="job-button" aria-label="Inbuilt Job Platform">
+    <svg viewBox="0 0 2009 783" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+      <title id="title">Inbuilt Job Platform Button</title>
+      <desc id="desc">Illustrated hand-drawn button with briefcase icon, text, star, and arrow.</desc>
+
+      <defs>
+        <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="100%" stop-color="#fcfcff"/>
+        </linearGradient>
+
+        <linearGradient id="shellGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="74%" stop-color="#fffefe"/>
+          <stop offset="100%" stop-color="#f7f8fb"/>
+        </linearGradient>
+
+        <linearGradient id="baseGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#2b63e9"/>
+          <stop offset="50%" stop-color="#1752d4"/>
+          <stop offset="100%" stop-color="#0b43bf"/>
+        </linearGradient>
+
+        <linearGradient id="baseEdge" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#2f7cff"/>
+          <stop offset="100%" stop-color="#143eb4"/>
+        </linearGradient>
+
+        <linearGradient id="briefcaseGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#4f8eff"/>
+          <stop offset="58%" stop-color="#2f72ff"/>
+          <stop offset="100%" stop-color="#1f55df"/>
+        </linearGradient>
+
+        <linearGradient id="briefcaseFront" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#4d90ff"/>
+          <stop offset="100%" stop-color="#2b64f0"/>
+        </linearGradient>
+
+        <linearGradient id="yellowGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#ffe066"/>
+          <stop offset="60%" stop-color="#ffc91f"/>
+          <stop offset="100%" stop-color="#ffb400"/>
+        </linearGradient>
+
+        <linearGradient id="arrowGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#5fa0ff"/>
+          <stop offset="100%" stop-color="#2f72ff"/>
+        </linearGradient>
+
+        <linearGradient id="inkGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#101a45"/>
+          <stop offset="100%" stop-color="#0a1437"/>
+        </linearGradient>
+
+        <filter id="softShadow" x="-20%" y="-20%" width="140%" height="180%">
+          <feGaussianBlur in="SourceAlpha" stdDeviation="12" result="b"/>
+          <feOffset in="b" dx="0" dy="18" result="o"/>
+          <feColorMatrix in="o" type="matrix" values="0 0 0 0 0.06  0 0 0 0 0.08  0 0 0 0 0.18  0 0 0 0.16 0"/>
+          <feMerge>
+            <feMergeNode/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+
+        <filter id="shadowBlur" x="-30%" y="-30%" width="160%" height="180%">
+          <feGaussianBlur stdDeviation="16"/>
+        </filter>
+
+        <filter id="blur12" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="12"/>
+        </filter>
+
+        <filter id="roughen" x="-10%" y="-10%" width="120%" height="120%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="5" result="n"/>
+          <feDisplacementMap in="SourceGraphic" in2="n" scale="1.4" xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+
+        <filter id="roughenSoft" x="-10%" y="-10%" width="120%" height="120%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="1" seed="8" result="n"/>
+          <feDisplacementMap in="SourceGraphic" in2="n" scale="0.8" xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+
+        <pattern id="hatch" patternUnits="userSpaceOnUse" width="18" height="18" patternTransform="rotate(-22)">
+          <rect width="18" height="18" fill="transparent"/>
+          <path d="M 0 0 L 0 18" stroke="rgba(255,255,255,.08)" stroke-width="6" stroke-linecap="round"/>
+          <path d="M 9 0 L 9 18" stroke="rgba(255,255,255,.05)" stroke-width="3" stroke-linecap="round"/>
+        </pattern>
+
+        <pattern id="surfaceTexture" patternUnits="userSpaceOnUse" width="90" height="90">
+          <rect width="90" height="90" fill="transparent"/>
+          <path d="M10 18 C18 16, 32 20, 44 18 S72 17, 82 22" stroke="rgba(14,22,52,.045)" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <path d="M18 36 C30 34, 41 39, 58 37 S79 35, 84 38" stroke="rgba(14,22,52,.03)" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+          <path d="M9 58 C22 60, 37 54, 49 57 S73 62, 83 56" stroke="rgba(14,22,52,.035)" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+          <path d="M13 72 C26 70, 39 74, 58 72 S80 70, 85 72" stroke="rgba(14,22,52,.025)" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        </pattern>
+      </defs>
+
+      <rect x="0" y="0" width="2009" height="783" fill="url(#bgGrad)"/>
+
+      <!-- soft shadow under the full button -->
+      <ellipse class="base-shadow" cx="1000" cy="642" rx="865" ry="52" fill="rgba(13,22,57,.16)" filter="url(#shadowBlur)" opacity=".92" transform="translate(0,0)"/>
+      <ellipse cx="1000" cy="650" rx="770" ry="30" fill="rgba(13,22,57,.10)" filter="url(#blur12)" opacity=".78"/>
+
+      <!-- blue 3D base layer -->
+      <g class="hover-lift">
+        <rect x="31" y="142" width="1946" height="466" rx="82" fill="url(#baseGrad)" filter="url(#softShadow)"/>
+        <rect x="31" y="142" width="1946" height="466" rx="82" fill="url(#hatch)" opacity=".9"/>
+        <rect x="40" y="152" width="1928" height="38" rx="19" fill="rgba(255,255,255,.08)"/>
+        <path d="M55 560
+                 C260 563, 470 560, 695 559
+                 S1160 556, 1360 558
+                 S1700 565, 1890 560
+                 L1952 560
+                 L1952 603
+                 C1860 605, 1690 607, 1498 607
+                 S949 606, 741 606
+                 S323 607, 70 605
+                 L31 605
+                 L31 574
+                 C38 567, 44 563, 55 560 Z"
+              fill="url(#baseEdge)" opacity=".86"/>
+        <path d="M41 598 C220 612, 510 607, 800 606 S1445 606, 1962 598"
+              stroke="rgba(4,9,29,.24)" stroke-width="6" stroke-linecap="round" fill="none"/>
+      </g>
+
+      <!-- main shell shadow -->
+      <rect x="20" y="118" width="1967" height="486" rx="84" fill="rgba(13,22,57,.05)" filter="url(#softShadow)" opacity=".9"/>
+
+      <!-- main white shell -->
+      <g filter="url(#roughenSoft)">
+        <rect x="18" y="108" width="1965" height="483" rx="82" fill="url(#shellGrad)" stroke="#0b1537" stroke-width="8.5" stroke-linejoin="round"/>
+        <rect x="28" y="118" width="1945" height="463" rx="74" fill="none" stroke="rgba(12,22,56,.18)" stroke-width="2.8" stroke-linejoin="round"/>
+        <path d="M43 129
+                 C53 124, 69 121, 86 120
+                 C94 120, 101 120, 109 121"
+              stroke="rgba(255,255,255,.65)" stroke-width="5" stroke-linecap="round" fill="none" opacity=".85"/>
+        <rect x="22" y="112" width="1960" height="476" rx="80" fill="url(#surfaceTexture)" opacity=".45"/>
+      </g>
+
+      <!-- top highlight line and inner sketch lines -->
+      <path d="M73 124
+               C110 113, 178 112, 250 113
+               S447 114, 528 115
+               S714 111, 791 113
+               S1008 114, 1091 113
+               S1292 111, 1411 113
+               S1674 114, 1760 114
+               S1892 112, 1936 121"
+            stroke="rgba(12,22,56,.16)" stroke-width="3.5" stroke-linecap="round" fill="none" opacity=".85"/>
+
+      <path d="M74 140
+               C110 132, 182 130, 263 131
+               S430 133, 520 134
+               S701 132, 797 133
+               S1000 134, 1094 134
+               S1282 132, 1409 133
+               S1675 134, 1762 134
+               S1896 132, 1936 141"
+            stroke="rgba(12,22,56,.12)" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+
+      <!-- left doodles -->
+      <g filter="url(#roughenSoft)">
+        <path d="M109 214 q-10 -23 -19 -31" stroke="#0b1537" stroke-width="7" stroke-linecap="round" fill="none"/>
+        <path d="M124 204 q0 -18 -4 -30" stroke="#0b1537" stroke-width="7" stroke-linecap="round" fill="none"/>
+        <path d="M139 218 q10 -16 19 -21" stroke="#0b1537" stroke-width="7" stroke-linecap="round" fill="none"/>
+        <path d="M492 182 q-3 -24 -9 -36" stroke="#2f72ff" stroke-width="8" stroke-linecap="round" fill="none"/>
+        <path d="M513 170 q6 -34 8 -47" stroke="#2f72ff" stroke-width="8" stroke-linecap="round" fill="none"/>
+        <path d="M542 186 q12 -18 17 -30" stroke="#2f72ff" stroke-width="8" stroke-linecap="round" fill="none"/>
+        <path d="M166 495 h30" stroke="#2f72ff" stroke-width="8" stroke-linecap="round" fill="none"/>
+        <path d="M166 506 h46" stroke="#2f72ff" stroke-width="5" stroke-linecap="round" fill="none"/>
+      </g>
+
+      <!-- briefcase splash -->
+      <g filter="url(#roughenSoft)">
+        <path d="M116 258
+                 C132 207, 159 197, 205 194
+                 C243 191, 272 189, 305 181
+                 C342 171, 375 170, 402 192
+                 C420 207, 441 236, 443 268
+                 C446 299, 431 322, 400 334
+                 C370 345, 338 350, 310 352
+                 C269 355, 238 354, 200 344
+                 C154 330, 122 308, 116 258 Z"
+              fill="url(#yellowGrad)" opacity=".97"/>
+      </g>
+
+      <!-- briefcase -->
+      <g class="briefcase-group" filter="url(#roughenSoft)" transform="translate(0,0) scale(.86) translate(40,36)">
+        <path d="M128 260
+                 C131 232, 147 219, 176 214
+                 L336 194
+                 C361 190, 380 197, 393 214
+                 L432 256
+                 C444 270, 446 294, 441 311
+                 L424 375
+                 C418 396, 404 410, 381 414
+                 L174 438
+                 C147 441, 126 430, 116 407
+                 L93 353
+                 C82 324, 84 297, 96 277
+                 Z"
+              fill="url(#briefcaseGrad)" stroke="#0b1537" stroke-width="7.5" stroke-linejoin="round"/>
+        <path d="M142 250
+                 C146 231, 161 221, 180 219
+                 L336 201
+                 C357 198, 373 203, 384 217"
+              fill="none" stroke="rgba(255,255,255,.45)" stroke-width="5" stroke-linecap="round"/>
+        <path d="M104 295
+                 C122 255, 148 240, 182 236
+                 L366 212
+                 C391 210, 415 219, 425 240
+                 L431 255
+                 C416 245, 400 240, 380 242
+                 L153 269
+                 C133 271, 117 281, 104 295 Z"
+              fill="rgba(255,255,255,.17)"/>
+        <path d="M130 255
+                 C126 227, 132 213, 151 202
+                 C166 194, 182 190, 200 188
+                 L259 180
+                 C264 180, 270 183, 273 188
+                 L277 218
+                 C277 223, 273 228, 267 229
+                 L179 240
+                 C156 243, 139 246, 130 255 Z"
+              fill="rgba(255,255,255,.18)"/>
+        <path d="M121 289
+                 C122 272, 132 261, 147 259
+                 L386 230
+                 C403 228, 417 237, 423 252
+                 L431 258
+                 C423 254, 412 252, 398 254
+                 L146 286
+                 C135 288, 126 291, 121 289 Z"
+              fill="rgba(15,24,60,.12)"/>
+        <path d="M196 200
+                 L197 159
+                 C198 149, 204 142, 213 141
+                 L291 141
+                 C302 141, 309 147, 309 158
+                 L309 193"
+              fill="none" stroke="#0b1537" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M194 202
+                 L192 164
+                 C192 152, 196 145, 206 143
+                 L290 143
+                 C299 143, 304 149, 305 159
+                 L305 198"
+              fill="none" stroke="#2f72ff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M218 229
+                 C221 211, 230 203, 246 201
+                 L260 199
+                 C275 198, 287 203, 292 215
+                 L292 236"
+              fill="none" stroke="rgba(255,255,255,.35)" stroke-width="4" stroke-linecap="round"/>
+        <path d="M260 295
+                 C285 292, 303 287, 321 282
+                 C330 279, 341 279, 347 285
+                 C352 289, 352 297, 350 307
+                 L345 350
+                 C343 362, 337 368, 326 369
+                 L280 374
+                 C271 375, 264 373, 259 367
+                 C254 361, 252 352, 253 342
+                 L256 304
+                 C257 299, 257 296, 260 295 Z"
+              fill="#f7bf1d" stroke="#0b1537" stroke-width="5.5" stroke-linejoin="round"/>
+        <path d="M269 302
+                 C270 311, 271 329, 274 348"
+              stroke="rgba(255,255,255,.22)" stroke-width="4" stroke-linecap="round" fill="none"/>
+        <path d="M264 320 L339 313" stroke="rgba(255,255,255,.25)" stroke-width="4" stroke-linecap="round" fill="none"/>
+        <path d="M126 417
+                 C139 428, 154 435, 169 435
+                 L382 411
+                 C400 409, 413 399, 421 386"
+              fill="none" stroke="#0b1537" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M116 401
+                 C129 413, 146 418, 164 417
+                 L378 393
+                 C395 391, 408 382, 416 369"
+              fill="none" stroke="rgba(255,255,255,.14)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+
+      <!-- tiny top shadow around briefcase -->
+      <path d="M86 200 q-16 18 -18 44" stroke="rgba(12,22,56,.22)" stroke-width="4" stroke-linecap="round" fill="none" opacity=".85"/>
+      <path d="M458 175 q10 6 18 14" stroke="rgba(12,22,56,.22)" stroke-width="4" stroke-linecap="round" fill="none" opacity=".85"/>
+
+      <!-- star doodle -->
+      <g filter="url(#roughenSoft)">
+        <path d="M1544 74
+                 L1558 97
+                 L1586 102
+                 L1567 123
+                 L1570 149
+                 L1544 136
+                 L1520 149
+                 L1524 123
+                 L1503 103
+                 L1532 98 Z"
+              fill="url(#yellowGrad)" stroke="#0b1537" stroke-width="7.5" stroke-linejoin="round"/>
+        <path d="M1550 79
+                 L1559 99
+                 L1582 103
+                 L1564 118
+                 L1567 141
+                 L1547 130
+                 L1527 141
+                 L1530 118
+                 L1512 103
+                 L1535 99 Z"
+              fill="rgba(255,255,255,.22)"/>
+        <path d="M1487 108 q-10 5 -15 13" stroke="#0b1537" stroke-width="6.5" stroke-linecap="round" fill="none"/>
+        <path d="M1494 91 q-5 -7 -11 -11" stroke="#0b1537" stroke-width="6.5" stroke-linecap="round" fill="none"/>
+        <path d="M1599 89 q15 -3 22 -12" stroke="#0b1537" stroke-width="6.5" stroke-linecap="round" fill="none"/>
+        <path d="M1620 112 q11 2 24 0" stroke="#0b1537" stroke-width="6.5" stroke-linecap="round" fill="none"/>
+      </g>
+
+      <!-- main title -->
+      <g class="caption">
+        <text x="1000" y="355"
+              text-anchor="middle"
+              dominant-baseline="middle"
+              font-family="Arial Rounded MT Bold, Segoe Print, Trebuchet MS, Comic Sans MS, sans-serif"
+              font-size="110"
+              font-weight="700"
+              letter-spacing=".5"
+              fill="rgba(15,24,60,.24)"
+              transform="translate(6,10)">Inbuilt Job Platform</text>
+
+        <text x="1000" y="348"
+              text-anchor="middle"
+              dominant-baseline="middle"
+              font-family="Arial Rounded MT Bold, Segoe Print, Trebuchet MS, Comic Sans MS, sans-serif"
+              font-size="110"
+              font-weight="700"
+              letter-spacing=".5"
+              fill="url(#inkGrad)"
+              filter="url(#roughenSoft)">Inbuilt Job Platform</text>
+      </g>
+
+      <!-- underline -->
+      <g filter="url(#roughenSoft)">
+        <path d="M660 514
+                 C752 515, 842 515, 934 513
+                 S1110 509, 1194 510
+                 S1386 511, 1504 507"
+              stroke="#2f72ff" stroke-width="7.8" stroke-linecap="round" fill="none"/>
+        <path d="M790 545
+                 C862 543, 932 539, 1002 540
+                 S1182 546, 1268 542"
+              stroke="#2f72ff" stroke-width="8.2" stroke-linecap="round" fill="none"/>
+        <path d="M863 530
+                 C955 528, 1042 526, 1138 527
+                 S1280 529, 1350 529"
+              stroke="#2f72ff" stroke-width="5" stroke-linecap="round" fill="none" opacity=".85"/>
+      </g>
+
+      <!-- right arrow button -->
+      <g class="arrow-group" filter="url(#roughenSoft)">
+        <circle cx="1832" cy="324" r="95" fill="#0b1537" opacity=".18" filter="url(#blur12)" transform="translate(0,16)"/>
+        <circle cx="1828" cy="317" r="94" fill="url(#arrowGrad)" stroke="#0b1537" stroke-width="7.5"/>
+        <circle cx="1820" cy="308" r="72" fill="rgba(255,255,255,.12)"/>
+        <path class="arrow-bounce" d="M1775 314 H1841
+                 M1820 279
+                 C1844 302, 1851 311, 1868 327
+                 C1851 344, 1845 352, 1820 376"
+              fill="none" stroke="#ffffff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M1777 316 H1840
+                 M1819 280
+                 C1840 302, 1847 310, 1863 327
+                 C1847 344, 1841 351, 1819 374"
+              fill="none" stroke="rgba(11,21,55,.23)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" opacity=".35"/>
+        <path d="M1744 218 q-4 -24 -4 -36" stroke="#2f72ff" stroke-width="9" stroke-linecap="round" fill="none"/>
+        <path d="M1776 212 q16 -20 27 -33" stroke="#2f72ff" stroke-width="9" stroke-linecap="round" fill="none"/>
+        <path d="M1813 205 q10 -8 23 -12" stroke="#2f72ff" stroke-width="9" stroke-linecap="round" fill="none"/>
+      </g>
+
+      <!-- little right-side navy scribble -->
+      <g filter="url(#roughenSoft)">
+        <path d="M1975 331 h12" stroke="#0b1537" stroke-width="7" stroke-linecap="round" fill="none"/>
+        <path d="M1975 344 h12" stroke="#0b1537" stroke-width="7" stroke-linecap="round" fill="none"/>
+      </g>
+
+      <!-- subtle foreground gloss -->
+      <path d="M58 145
+               C220 126, 403 122, 607 123
+               S1162 120, 1380 121
+               S1700 120, 1930 141"
+            stroke="rgba(255,255,255,.55)" stroke-width="8" stroke-linecap="round" fill="none" opacity=".55"/>
+
+      <!-- tiny extra texture around title -->
+      <path d="M559 326 q24 -8 41 -4" stroke="rgba(12,22,56,.09)" stroke-width="4" stroke-linecap="round" fill="none"/>
+      <path d="M1450 327 q26 -6 49 -1" stroke="rgba(12,22,56,.09)" stroke-width="4" stroke-linecap="round" fill="none"/>
+    </svg>
+  </button>
+</div>
+
+<script>
+  const btn = document.querySelector('.job-button');
+
+  btn.addEventListener('click', () => {
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.location.hash = 'career';
+        return;
+      }
+    } catch (error) {
+      // Fall through to the standalone link.
+    }
+    window.location.href = '../../index.html#career';
+  });
+
+  // Small interactive polish for hover/focus states.
+  btn.addEventListener('pointerenter', () => btn.setAttribute('data-hover', 'true'));
+  btn.addEventListener('pointerleave', () => btn.removeAttribute('data-hover'));
+  btn.addEventListener('focus', () => btn.setAttribute('data-hover', 'true'));
+  btn.addEventListener('blur', () => btn.removeAttribute('data-hover'));
+
+  // Pointer-driven micro sheen.
+  btn.addEventListener('pointermove', (e) => {
+    const r = btn.getBoundingClientRect();
+    const x = ((e.clientX - r.left) / r.width) * 100;
+    const y = ((e.clientY - r.top) / r.height) * 100;
+    btn.style.setProperty('--px', x.toFixed(2) + '%');
+    btn.style.setProperty('--py', y.toFixed(2) + '%');
+  });
+</script>
+</body>
+</html>

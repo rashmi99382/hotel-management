@@ -3,6 +3,7 @@ window.smartHotelServices = window.smartHotelServices || {};
 window.smartHotelServices.menu = (() => {
   const STORAGE_KEY = "smartQrMenuSystemState";
   const VIDEO_LIMIT = 10 * 1024 * 1024;
+  const POPUP_IMAGE_LIMIT = 3 * 1024 * 1024;
 
   let root = null;
   let state = loadState();
@@ -14,6 +15,8 @@ window.smartHotelServices.menu = (() => {
   let uploadedHotelLogo = "";
   let uploadedHotelPhoto = "";
   let uploadedHotelVideo = "";
+  let uploadedPopupImage = null;
+  let uploadedPopupVideo = null;
   let pendingVideoFile = null;
   let roomView = "3d";
   let qrDrawVersion = 0;
@@ -52,7 +55,12 @@ window.smartHotelServices.menu = (() => {
         googleReview: "",
         location: "",
         instagram: "",
-        facebook: ""
+        facebook: "",
+        linkedin: "",
+        pinterest: "",
+        xTwitter: "",
+        youtube: "",
+        attendanceLink: ""
       },
       settings: {
         mode: "both",
@@ -188,6 +196,41 @@ window.smartHotelServices.menu = (() => {
     return digits || "919999999999";
   }
 
+  function escapeHtml(value) {
+    return String(value || "").replace(/[&<>"']/g, (char) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      "\"": "&quot;",
+      "'": "&#39;"
+    })[char]);
+  }
+
+  function safeUrl(value) {
+    const text = String(value || "").trim();
+    if (!text) return "";
+    try {
+      const url = new URL(text, location.href);
+      return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+    } catch {
+      return "";
+    }
+  }
+
+  function hotelSocialLinks() {
+    return [
+      ["LinkedIn", safeUrl(state.hotel.linkedin)],
+      ["Instagram", safeUrl(state.hotel.instagram)],
+      ["Facebook", safeUrl(state.hotel.facebook)],
+      ["Pinterest", safeUrl(state.hotel.pinterest)],
+      ["X", safeUrl(state.hotel.xTwitter)],
+      ["YouTube", safeUrl(state.hotel.youtube)],
+      ["Location", safeUrl(state.hotel.location)],
+      ["Attendance", safeUrl(state.hotel.attendanceLink)],
+      ["WhatsApp", state.hotel.contact ? `https://wa.me/${phoneNumber()}` : ""]
+    ].filter(([, href]) => href);
+  }
+
   function orderLink(item) {
     const message = `Order request\nHotel: ${state.hotel.name}\nItem: ${item.name}\nPrice: ₹${item.price}`;
     return `https://wa.me/${phoneNumber()}?text=${encodeURIComponent(message)}`;
@@ -291,6 +334,11 @@ window.smartHotelServices.menu = (() => {
     form.elements.location.value = state.hotel.location;
     form.elements.instagram.value = state.hotel.instagram;
     form.elements.facebook.value = state.hotel.facebook;
+    form.elements.linkedin.value = state.hotel.linkedin;
+    form.elements.pinterest.value = state.hotel.pinterest;
+    form.elements.xTwitter.value = state.hotel.xTwitter;
+    form.elements.youtube.value = state.hotel.youtube;
+    form.elements.attendanceLink.value = state.hotel.attendanceLink;
 
     const registered = Boolean(state.hotel.registered && state.hotel.id);
     qs("#secureQrId").textContent = registered ? `QR ID: ${state.hotel.id}` : "No QR ID yet";
@@ -322,11 +370,9 @@ window.smartHotelServices.menu = (() => {
     qs("#customerHotelName").textContent = state.hotel.name || "Register your hotel";
     qs("#customerHotelAddress").textContent = state.hotel.address || "Address will appear here";
     qs("#hotelInfoText").textContent = `${state.hotel.address || "Address not added"} | Contact: ${state.hotel.contact || "Not added"}`;
-    qs("#socialLinks").innerHTML = [
-      state.hotel.location ? `<a href="${state.hotel.location}" target="_blank" rel="noreferrer">Location</a>` : "",
-      state.hotel.instagram ? `<a href="${state.hotel.instagram}" target="_blank" rel="noreferrer">Instagram</a>` : "",
-      state.hotel.facebook ? `<a href="${state.hotel.facebook}" target="_blank" rel="noreferrer">Facebook</a>` : ""
-    ].filter(Boolean).join("");
+    qs("#socialLinks").innerHTML = hotelSocialLinks().map(([label, href]) => (
+      `<a href="${escapeHtml(href)}" target="_blank" rel="noreferrer">${escapeHtml(label)}</a>`
+    )).join("");
     qs("#hotelMediaPreview").innerHTML = [
       state.hotel.logo ? `<figure><img src="${state.hotel.logo}" alt="Hotel logo" /><figcaption>Logo / picture</figcaption></figure>` : "",
       state.hotel.photo ? `<figure><img src="${state.hotel.photo}" alt="Hotel photo" /><figcaption>Hotel photo</figcaption></figure>` : "",
@@ -417,7 +463,12 @@ window.smartHotelServices.menu = (() => {
 
   function renderPopups() {
     qs("#popupList").innerHTML = state.popups.map((popup) => `
-      <span class="popup-pill">${popup.type}: ${popup.itemName}<button type="button" data-delete-popup="${popup.id}">&times;</button></span>
+      <span class="popup-pill">
+        ${popup.type}: ${popup.itemName}
+        ${popup.video ? `<small>Video${popup.videoCompressed ? " 720p" : ""}</small>` : ""}
+        ${popup.imageCompressed ? `<small>Image compressed</small>` : ""}
+        <button type="button" data-delete-popup="${popup.id}">&times;</button>
+      </span>
     `).join("");
   }
 
@@ -536,10 +587,77 @@ window.smartHotelServices.menu = (() => {
     });
   }
 
+  function imageFromDataUrl(dataUrl) {
+    return new Promise((resolve) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => resolve(null);
+      image.src = dataUrl;
+    });
+  }
+
+  async function compressedImageData(file, maxBytes) {
+    const original = await fileToDataUrl(file);
+    if (!original || file.size <= maxBytes) {
+      return { src: original, compressed: false, size: file.size };
+    }
+    const image = await imageFromDataUrl(original);
+    if (!image) {
+      return { src: original, compressed: true, size: file.size };
+    }
+    const maxEdge = 1280;
+    const scale = Math.min(1, maxEdge / Math.max(image.width, image.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(image.width * scale));
+    canvas.height = Math.max(1, Math.round(image.height * scale));
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    let quality = 0.76;
+    let result = canvas.toDataURL("image/jpeg", quality);
+    while (result.length > maxBytes * 1.38 && quality > 0.46) {
+      quality -= 0.08;
+      result = canvas.toDataURL("image/jpeg", quality);
+    }
+    return { src: result, compressed: true, size: file.size };
+  }
+
   async function readImageFile(input) {
     const file = input.files?.[0];
     if (!file) return;
     uploadedImage = await fileToDataUrl(file);
+  }
+
+  async function readPopupImageFile(input) {
+    const file = input.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload an image for the smart popup.");
+      input.value = "";
+      return;
+    }
+    uploadedPopupImage = await compressedImageData(file, POPUP_IMAGE_LIMIT);
+    if (uploadedPopupImage.compressed) {
+      alert("Popup image was over 3MB, so it was compressed for this prototype.");
+    }
+  }
+
+  function readPopupVideoFile(input) {
+    const file = input.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("video/")) {
+      alert("Please upload a video for the smart popup.");
+      input.value = "";
+      return;
+    }
+    uploadedPopupVideo = {
+      src: URL.createObjectURL(file),
+      compressed: file.size > VIDEO_LIMIT,
+      quality: file.size > VIDEO_LIMIT ? "720p" : "Original",
+      size: file.size
+    };
+    if (uploadedPopupVideo.compressed) {
+      alert("Popup video was over 10MB, so it is saved as a 720p compressed preview for this prototype.");
+    }
   }
 
   async function readHotelImageFile(input, target) {
@@ -613,7 +731,12 @@ window.smartHotelServices.menu = (() => {
         googleReview: String(data.get("googleReview")).trim(),
         location: String(data.get("location")).trim(),
         instagram: String(data.get("instagram")).trim(),
-        facebook: String(data.get("facebook")).trim()
+        facebook: String(data.get("facebook")).trim(),
+        linkedin: String(data.get("linkedin")).trim(),
+        pinterest: String(data.get("pinterest")).trim(),
+        xTwitter: String(data.get("xTwitter")).trim(),
+        youtube: String(data.get("youtube")).trim(),
+        attendanceLink: String(data.get("attendanceLink")).trim()
       };
       saveState();
       renderAll();
@@ -673,6 +796,8 @@ window.smartHotelServices.menu = (() => {
 
     qs("#dishImageFile").addEventListener("change", (event) => readImageFile(event.currentTarget));
     qs("#dishVideoFile").addEventListener("change", (event) => readVideoFile(event.currentTarget));
+    qs("#popupImageFile").addEventListener("change", (event) => readPopupImageFile(event.currentTarget));
+    qs("#popupVideoFile").addEventListener("change", (event) => readPopupVideoFile(event.currentTarget));
 
     qs("#compressVideoButton").addEventListener("click", () => {
       if (!pendingVideoFile) return;
@@ -715,10 +840,16 @@ window.smartHotelServices.menu = (() => {
       state.popups.push({
         id: `popup-${secureId().slice(0, 8)}`,
         itemName: String(data.get("itemName")).trim(),
-        image: String(data.get("image")).trim() || imageSvg(String(data.get("itemName")).trim(), "#7c3aed", "#ec4899"),
+        image: uploadedPopupImage?.src || String(data.get("image")).trim() || imageSvg(String(data.get("itemName")).trim(), "#7c3aed", "#ec4899"),
+        imageCompressed: Boolean(uploadedPopupImage?.compressed),
+        video: uploadedPopupVideo?.src || "",
+        videoCompressed: Boolean(uploadedPopupVideo?.compressed),
+        videoQuality: uploadedPopupVideo?.quality || "",
         offer: String(data.get("offer")).trim(),
         type: String(data.get("type"))
       });
+      uploadedPopupImage = null;
+      uploadedPopupVideo = null;
       event.currentTarget.reset();
       saveState();
       renderAll();
