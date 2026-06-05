@@ -217,6 +217,10 @@ window.smartHotelServices.menu = (() => {
     }
   }
 
+  function attendancePortalUrl() {
+    return new URL("services/attendance/worker.html", location.href).href;
+  }
+
   function hotelSocialLinks() {
     return [
       ["LinkedIn", safeUrl(state.hotel.linkedin)],
@@ -226,7 +230,7 @@ window.smartHotelServices.menu = (() => {
       ["X", safeUrl(state.hotel.xTwitter)],
       ["YouTube", safeUrl(state.hotel.youtube)],
       ["Location", safeUrl(state.hotel.location)],
-      ["Attendance", safeUrl(state.hotel.attendanceLink)],
+      ["Attendance", safeUrl(state.hotel.attendanceLink) || attendancePortalUrl()],
       ["WhatsApp", state.hotel.contact ? `https://wa.me/${phoneNumber()}` : ""]
     ].filter(([, href]) => href);
   }

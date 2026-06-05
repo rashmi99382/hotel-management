@@ -1233,12 +1233,16 @@ function actionTile(href, label, value) {
   `;
 }
 
+function socialCodeIcon(icon, label) {
+  return window.smartHotelSocialIcons?.icon(icon, label) || `<span>${escapeHtml(label || icon)}</span>`;
+}
+
 function footerTile(href, icon, label, tone = "") {
   if (!href) return "";
   const target = href.startsWith("tel:") ? "_self" : "_blank";
   return `
     <a class="scan-footer-link ${escapeHtml(tone)}" href="${escapeHtml(href)}" target="${target}" rel="noreferrer" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">
-      <span>${escapeHtml(icon)}</span>
+      ${socialCodeIcon(icon, label)}
       <strong>${escapeHtml(label)}</strong>
     </a>
   `;
@@ -1261,17 +1265,17 @@ function customerSocialTiles() {
   const pinterestHref = safeUrl(hotel.pinterest);
   const xHref = safeUrl(hotel.xTwitter);
   const youtubeHref = safeUrl(hotel.youtube);
-  const attendanceHref = safeUrl(hotel.attendanceLink);
+  const attendanceHref = safeUrl(hotel.attendanceLink) || workerAttendanceUrl();
   return [
-    footerTile(linkedinHref, "in", "LinkedIn", "tone-linkedin"),
-    footerTile(instagramHref, "ig", "Instagram", "tone-instagram"),
-    footerTile(facebookHref, "f", "Facebook", "tone-facebook"),
-    footerTile(pinterestHref, "p", "Pinterest", "tone-pinterest"),
+    footerTile(linkedinHref, "linkedin", "LinkedIn", "tone-linkedin"),
+    footerTile(instagramHref, "instagram", "Instagram", "tone-instagram"),
+    footerTile(facebookHref, "facebook", "Facebook", "tone-facebook"),
+    footerTile(pinterestHref, "pinterest", "Pinterest", "tone-pinterest"),
     footerTile(xHref, "x", "X", "tone-x"),
-    footerTile(youtubeHref, "yt", "YouTube", "tone-youtube"),
-    footerTile(locationHref, "lo", "Location", "tone-location"),
-    footerTile(attendanceHref, "at", "Attendance", "tone-attendance"),
-    footerTile(phoneHref, "wa", "WhatsApp", "tone-whatsapp")
+    footerTile(youtubeHref, "youtube", "YouTube", "tone-youtube"),
+    footerTile(locationHref, "location", "Location", "tone-location"),
+    footerTile(attendanceHref, "attendance", "Attendance", "tone-attendance"),
+    footerTile(phoneHref, "whatsapp", "WhatsApp", "tone-whatsapp")
   ].filter(Boolean).join("");
 }
 

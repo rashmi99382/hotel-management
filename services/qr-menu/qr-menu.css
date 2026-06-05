@@ -805,7 +805,7 @@
   transform: translateY(-2px);
 }
 
-.scan-footer-link span {
+.scan-footer-link > span:not(.social-code-logo) {
   display: grid;
   place-items: center;
   width: 42px;
@@ -818,6 +818,21 @@
   text-transform: uppercase;
 }
 
+.scan-footer-link .social-code-logo {
+  width: 46px;
+  height: 46px;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+  text-transform: none;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.16);
+}
+
+.scan-footer-link .social-code-logo svg {
+  width: 100%;
+  height: 100%;
+}
+
 .scan-footer-link strong {
   position: absolute;
   inline-size: 1px;
@@ -827,33 +842,33 @@
   white-space: nowrap;
 }
 
-.scan-footer-link.tone-instagram span {
+.scan-footer-link.tone-instagram > span:not(.social-code-logo) {
   background: linear-gradient(135deg, #f97316, #db2777 48%, #7c3aed);
 }
 
-.scan-footer-link.tone-facebook span,
-.scan-footer-link.tone-linkedin span {
+.scan-footer-link.tone-facebook > span:not(.social-code-logo),
+.scan-footer-link.tone-linkedin > span:not(.social-code-logo) {
   background: linear-gradient(135deg, #2563eb, #0f5fb8);
 }
 
-.scan-footer-link.tone-pinterest span,
-.scan-footer-link.tone-youtube span {
+.scan-footer-link.tone-pinterest > span:not(.social-code-logo),
+.scan-footer-link.tone-youtube > span:not(.social-code-logo) {
   background: linear-gradient(135deg, #dc2626, #ef4444);
 }
 
-.scan-footer-link.tone-x span {
+.scan-footer-link.tone-x > span:not(.social-code-logo) {
   background: linear-gradient(135deg, #0f172a, #334155);
 }
 
-.scan-footer-link.tone-location span {
+.scan-footer-link.tone-location > span:not(.social-code-logo) {
   background: linear-gradient(135deg, #16a34a, #0891b2);
 }
 
-.scan-footer-link.tone-attendance span {
+.scan-footer-link.tone-attendance > span:not(.social-code-logo) {
   background: linear-gradient(135deg, #7c3aed, #2563eb);
 }
 
-.scan-footer-link.tone-whatsapp span {
+.scan-footer-link.tone-whatsapp > span:not(.social-code-logo) {
   background: linear-gradient(135deg, #128c4b, #22c55e);
 }
 

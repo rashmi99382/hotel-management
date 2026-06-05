@@ -1,7 +1,7 @@
 const DEMO_EMAIL = "rashmiranjanabc241947@gmail.com";
 const DEMO_PASSWORD = "Rashmi@123";
 const SESSION_KEY = "smartHotelPrototypeSession";
-const ASSET_VERSION = "jobs-custom-button-v1";
+const ASSET_VERSION = "social-icons-v1";
 const PROFILE_KEY = "smartHotelAdminProfile";
 const QR_MENU_STORAGE_KEY = "smartQrMenuSystemState";
 const PUBLIC_HASHES = new Set(["", "home", "design", "product", "plans", "business", "education", "career", "help"]);
@@ -302,15 +302,15 @@ function whatsappPublicUrl(value) {
 }
 
 const SIDEBAR_SOCIAL_FIELDS = [
-  { key: "linkedin", label: "LinkedIn", icon: "in", type: "url", placeholder: "LinkedIn page link" },
-  { key: "instagram", label: "Instagram", icon: "ig", type: "url", placeholder: "Instagram profile link" },
-  { key: "facebook", label: "Facebook", icon: "f", type: "url", placeholder: "Facebook page link" },
-  { key: "pinterest", label: "Pinterest", icon: "p", type: "url", placeholder: "Pinterest link" },
+  { key: "linkedin", label: "LinkedIn", icon: "linkedin", type: "url", placeholder: "LinkedIn page link" },
+  { key: "instagram", label: "Instagram", icon: "instagram", type: "url", placeholder: "Instagram profile link" },
+  { key: "facebook", label: "Facebook", icon: "facebook", type: "url", placeholder: "Facebook page link" },
+  { key: "pinterest", label: "Pinterest", icon: "pinterest", type: "url", placeholder: "Pinterest link" },
   { key: "xTwitter", label: "X", icon: "x", type: "url", placeholder: "X / Twitter link" },
-  { key: "youtube", label: "YouTube", icon: "yt", type: "url", placeholder: "YouTube channel link" },
-  { key: "contact", label: "WhatsApp", icon: "wa", type: "tel", placeholder: "WhatsApp number" },
-  { key: "attendanceLink", label: "Attendance", icon: "at", type: "url", placeholder: "Attendance portal link" },
-  { key: "location", label: "Location", icon: "lo", type: "url", placeholder: "Google Maps / location link" }
+  { key: "youtube", label: "YouTube", icon: "youtube", type: "url", placeholder: "YouTube channel link" },
+  { key: "contact", label: "WhatsApp", icon: "whatsapp", type: "tel", placeholder: "WhatsApp number" },
+  { key: "attendanceLink", label: "Attendance", icon: "attendance", type: "url", placeholder: "Attendance portal link" },
+  { key: "location", label: "Location", icon: "location", type: "url", placeholder: "Google Maps / location link" }
 ];
 
 function readQrHotelSettings() {
@@ -351,16 +351,31 @@ function readImageAsDataUrl(file) {
 function sidebarSocialLinks() {
   const hotel = readQrHotelSettings();
   return [
-    { label: "LinkedIn", icon: "in", href: safePublicUrl(hotel.linkedin) },
-    { label: "Instagram", icon: "ig", href: safePublicUrl(hotel.instagram) },
-    { label: "Facebook", icon: "f", href: safePublicUrl(hotel.facebook) },
-    { label: "Pinterest", icon: "p", href: safePublicUrl(hotel.pinterest) },
+    { label: "LinkedIn", icon: "linkedin", href: safePublicUrl(hotel.linkedin) },
+    { label: "Instagram", icon: "instagram", href: safePublicUrl(hotel.instagram) },
+    { label: "Facebook", icon: "facebook", href: safePublicUrl(hotel.facebook) },
+    { label: "Pinterest", icon: "pinterest", href: safePublicUrl(hotel.pinterest) },
     { label: "X", icon: "x", href: safePublicUrl(hotel.xTwitter) },
-    { label: "YouTube", icon: "yt", href: safePublicUrl(hotel.youtube) },
-    { label: "Location", icon: "lo", href: safePublicUrl(hotel.location) },
-    { label: "Attendance", icon: "at", href: safePublicUrl(hotel.attendanceLink) },
-    { label: "WhatsApp", icon: "wa", href: whatsappPublicUrl(hotel.contact) }
+    { label: "YouTube", icon: "youtube", href: safePublicUrl(hotel.youtube) },
+    { label: "Location", icon: "location", href: safePublicUrl(hotel.location) },
+    { label: "Attendance", icon: "attendance", href: safePublicUrl(hotel.attendanceLink) },
+    { label: "WhatsApp", icon: "whatsapp", href: whatsappPublicUrl(hotel.contact) }
   ].filter((item) => item.href);
+}
+
+function sidebarCodeIcon(key, label) {
+  return window.smartHotelSocialIcons?.icon(key, label) || `<span class="social-code-logo">${escapePublicHtml(label || key)}</span>`;
+}
+
+function sidebarLogoMarkup(hotel) {
+  return hotel.logo ? `<img src="${escapePublicHtml(hotel.logo)}" alt="Admin logo" />` : "SH";
+}
+
+function renderSidebarSocialTriggerLogo() {
+  const button = document.querySelector("#sidebarSocialTrigger");
+  if (!button) return;
+  const hotel = readQrHotelSettings();
+  button.innerHTML = sidebarLogoMarkup(hotel);
 }
 
 function renderSidebarSocialPanel() {
@@ -371,18 +386,19 @@ function renderSidebarSocialPanel() {
     <form class="sidebar-social-form" id="sidebarSocialForm">
       <div class="sidebar-social-form-head">
         <label class="sidebar-social-logo">
-          <span class="sidebar-social-logo-preview">${hotel.logo ? `<img src="${escapePublicHtml(hotel.logo)}" alt="Hotel logo" />` : "SH"}</span>
+          <span class="sidebar-social-logo-preview">${sidebarLogoMarkup(hotel)}</span>
           <input id="sidebarLogoInput" type="file" accept="image/*" />
         </label>
         <div>
           <strong>Admin links</strong>
-          <span>Save icons for customer QR page</span>
+          <span class="sidebar-admin-email">${escapePublicHtml(DEMO_EMAIL)}</span>
+          <span class="sidebar-upload-hint">Upload the img</span>
         </div>
       </div>
       <div class="sidebar-social-fields">
         ${SIDEBAR_SOCIAL_FIELDS.map((field) => `
           <label class="sidebar-social-field">
-            <span>${escapePublicHtml(field.icon)}</span>
+            <span class="sidebar-social-field-icon">${sidebarCodeIcon(field.icon, field.label)}</span>
             <input
               name="${escapePublicHtml(field.key)}"
               type="${field.type === "tel" ? "tel" : "url"}"
@@ -407,6 +423,7 @@ function renderSidebarSocialPanel() {
     const logo = await readImageAsDataUrl(file);
     saveQrHotelSettings({ logo });
     renderSidebarSocialPanel();
+    renderSidebarSocialTriggerLogo();
   });
   form?.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -416,6 +433,7 @@ function renderSidebarSocialPanel() {
       patch[field.key] = String(data.get(field.key) || "").trim();
     });
     saveQrHotelSettings(patch);
+    renderSidebarSocialTriggerLogo();
     if (status) status.textContent = "Saved";
   });
 }
@@ -444,9 +462,11 @@ function bindSidebarSocialLauncher() {
   window.addEventListener("storage", (event) => {
     if (event.key !== QR_MENU_STORAGE_KEY) return;
     renderSidebarSocialPanel();
+    renderSidebarSocialTriggerLogo();
   });
 
   renderSidebarSocialPanel();
+  renderSidebarSocialTriggerLogo();
 }
 
 function careerInitials(value) {
