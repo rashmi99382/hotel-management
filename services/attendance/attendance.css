@@ -1029,6 +1029,34 @@
 }
 
 @media (max-width: 780px) {
+  .present-approval-float {
+    right: 10px;
+    bottom: 10px;
+    gap: 6px;
+    width: min(250px, calc(100vw - 20px));
+  }
+
+  .present-approval-toggle {
+    min-width: 138px;
+    min-height: 38px;
+    gap: 7px;
+    padding: 6px 8px 6px 10px;
+    border-radius: 9px;
+    font-size: 12px;
+  }
+
+  .present-approval-toggle strong {
+    min-width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    font-size: 12px;
+  }
+
+  .present-approval-panel {
+    max-height: min(430px, 58vh);
+    padding: 10px;
+  }
+
   .attendance-hero,
   .att-card-heading,
   .review-item,

@@ -1572,6 +1572,46 @@
 }
 
 @media (max-width: 720px) {
+  .room-confirmation-float {
+    right: 10px;
+    bottom: 10px;
+    gap: 6px;
+    width: min(250px, calc(100vw - 20px));
+  }
+
+  .room-confirmation-toggle {
+    min-width: 138px;
+    min-height: 38px;
+    gap: 7px;
+    padding: 6px 8px 6px 10px;
+    border-radius: 9px;
+    font-size: 12px;
+  }
+
+  .room-confirmation-toggle strong {
+    min-width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    font-size: 12px;
+  }
+
+  .room-confirmation-panel {
+    max-height: min(430px, 58vh);
+    padding: 10px;
+  }
+
+  .booking-qr-mode-float {
+    right: 10px;
+    bottom: 56px;
+  }
+
+  .booking-qr-mode-toggle {
+    min-width: 54px;
+    min-height: 34px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
   .inline-form,
   .table-builder-form,
   .media-toolbar,

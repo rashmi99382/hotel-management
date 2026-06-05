@@ -67,8 +67,10 @@
     const fromLeftEdge = gestureStart.x <= 36;
     const fromRightEdge = gestureStart.x >= gestureStart.width - 36;
 
-    if (absX > 58 && absX > absY * 1.25) {
-      if (!gestureStart.sidebarOpen && ((fromLeftEdge && deltaX > 0) || (fromRightEdge && deltaX < 0))) {
+    if (absX > 44 && absX > absY * 1.08) {
+      const openFromAnyRightSwipe = deltaX > 0;
+      const openFromRightEdgeLeftSwipe = fromRightEdge && deltaX < 0;
+      if (!gestureStart.sidebarOpen && (openFromAnyRightSwipe || openFromRightEdgeLeftSwipe || (fromLeftEdge && deltaX > 0))) {
         setCollapsed(false, { persist: false });
       } else if (gestureStart.sidebarOpen && deltaX < 0) {
         setCollapsed(true, { persist: false });
@@ -103,11 +105,18 @@
     finishGesture(event.clientX, event.clientY);
   }
 
+  function closeMobileSidebarAfterNavigation(event) {
+    if (!isMobile()) return;
+    if (!event.target.closest("[data-section-link]")) return;
+    setCollapsed(true, { persist: false });
+  }
+
   toggles.forEach((toggle) => {
     toggle.addEventListener("click", toggleSidebar, { capture: true });
   });
 
   document.addEventListener("click", closeMobileSidebar);
+  document.addEventListener("click", closeMobileSidebarAfterNavigation);
   document.addEventListener("touchstart", handleTouchStart, { passive: true });
   document.addEventListener("touchend", handleTouchEnd, { passive: true });
   document.addEventListener("pointerdown", handlePointerStart, { passive: true });

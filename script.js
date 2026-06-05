@@ -1,7 +1,7 @@
 const DEMO_EMAIL = "rashmiranjanabc241947@gmail.com";
 const DEMO_PASSWORD = "Rashmi@123";
 const SESSION_KEY = "smartHotelPrototypeSession";
-const ASSET_VERSION = "mobile-sidebar-v2";
+const ASSET_VERSION = "mobile-floating-v1";
 const PROFILE_KEY = "smartHotelAdminProfile";
 const QR_MENU_STORAGE_KEY = "smartQrMenuSystemState";
 const PUBLIC_HASHES = new Set(["", "home", "design", "product", "plans", "business", "education", "career", "help"]);
@@ -902,7 +902,12 @@ document.addEventListener("click", (event) => {
 navItems.forEach((item) => {
   item.addEventListener("click", async (event) => {
     event.preventDefault();
-    await setSection(event.currentTarget.dataset.sectionLink);
+    const section = event.currentTarget.dataset.sectionLink;
+    if (!section) return;
+    if (window.location.hash !== `#${section}`) {
+      history.pushState(null, "", `#${section}`);
+    }
+    await setSection(section);
   });
 });
 

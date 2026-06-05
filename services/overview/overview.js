@@ -80,26 +80,31 @@ window.smartHotelServices.overview = (() => {
 
     const cards = [
       {
+        section: "booking",
         value: number(approvedRooms),
         title: "Booking QR",
         text: `${pendingRooms} pending requests, ${(booking.rooms || []).length || 0} rooms, ${(booking.floors || []).length || 0} floors.`
       },
       {
+        section: "menu",
         value: number(foodItems.length),
         title: "QR Menu",
         text: `${categories.length || 0} categories, ${menu.hotel?.registered ? "hotel registered" : "hotel not registered"}.`
       },
       {
+        section: "inventory",
         value: number(products.length),
         title: "Inventory",
         text: `${entries.length} stock entries, ${lowStock} low-stock alerts.`
       },
       {
+        section: "attendance",
         value: number(todayRecords.filter((record) => record.status === "present").length),
         title: "Attendance",
         text: `${employees.length} employees, ${todayRecords.filter((record) => !record.reviewed).length} pending approvals.`
       },
       {
+        section: "jobs",
         value: number(openJobs),
         title: "Jobs",
         text: `${applications.length} applications, ${jobsList.filter((job) => job.urgent).length} urgent posts.`
@@ -107,11 +112,11 @@ window.smartHotelServices.overview = (() => {
     ];
 
     target.innerHTML = cards.map((card) => `
-      <article class="summary-card">
+      <button class="summary-card overview-summary-link" type="button" data-overview-section="${escapeHtml(card.section)}">
         <span>${escapeHtml(card.value)}</span>
         <h2>${escapeHtml(card.title)}</h2>
         <p>${escapeHtml(card.text)}</p>
-      </article>
+      </button>
     `).join("");
   }
 
@@ -220,6 +225,15 @@ window.smartHotelServices.overview = (() => {
   }
 
   function handleClick(event) {
+    const sectionLink = event.target.closest("[data-overview-section]");
+    if (sectionLink) {
+      const section = sectionLink.dataset.overviewSection;
+      if (section) {
+        window.location.hash = section;
+      }
+      return;
+    }
+
     const tool = event.target.closest("[data-overview-tool]");
     if (tool) {
       if (tool.dataset.overviewTool === "password") openPasswordTool();

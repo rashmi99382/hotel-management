@@ -2358,9 +2358,13 @@
   }
 
   .customer-preview-fab {
-    right: 14px;
-    bottom: 14px;
-    left: 14px;
+    right: 10px;
+    bottom: 10px;
+    left: auto;
+    min-height: 42px;
+    min-width: 126px;
+    padding: 0 15px;
+    font-size: 13px;
     justify-content: center;
   }
 

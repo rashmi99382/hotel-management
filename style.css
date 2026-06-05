@@ -3242,8 +3242,19 @@ select:focus {
   }
 
   .profile-button-floating {
-    left: 18px;
-    bottom: 18px;
+    left: 14px;
+    bottom: 14px;
+  }
+
+  .profile-button-floating .profile-button {
+    width: 48px;
+    height: 48px;
+  }
+
+  .profile-button-floating .profile-avatar {
+    width: 38px;
+    height: 38px;
+    font-size: 14px;
   }
 
   .profile-panel {

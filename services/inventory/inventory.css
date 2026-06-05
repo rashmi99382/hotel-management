@@ -1054,8 +1054,11 @@
   }
 
   .inventory-report-fab {
-    right: 14px;
-    bottom: 14px;
+    right: 10px;
+    bottom: 10px;
+    min-height: 42px;
+    padding: 0 15px;
+    font-size: 13px;
   }
 
   .simple-report-card {
