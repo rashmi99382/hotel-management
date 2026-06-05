@@ -183,8 +183,51 @@
   }
 
   .overview-floating-tools {
-    right: 14px;
-    bottom: 14px;
+    right: 12px;
+    bottom: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: auto;
+    max-width: calc(100vw - 24px);
+  }
+
+  .overview-float-card {
+    grid-template-columns: 28px minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    width: min(42vw, 154px);
+    min-height: 52px;
+    padding: 9px 10px;
+    border-radius: 10px;
+    box-shadow: 0 14px 30px rgba(15, 23, 42, .14);
+  }
+
+  .overview-float-card::before {
+    content: "";
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    background:
+      radial-gradient(circle at 34% 30%, rgba(255, 255, 255, .92) 0 16%, transparent 18%),
+      linear-gradient(135deg, #2563eb, #7c3aed);
+    box-shadow: 0 8px 18px rgba(37, 99, 235, .22);
+  }
+
+  .overview-float-card.design-card::before {
+    background:
+      radial-gradient(circle at 34% 30%, rgba(255, 255, 255, .92) 0 16%, transparent 18%),
+      linear-gradient(135deg, #0f9f6e, #14b8a6);
+    box-shadow: 0 8px 18px rgba(15, 159, 110, .22);
+  }
+
+  .overview-float-card span {
+    font-size: 10px;
+    line-height: 1.12;
+    letter-spacing: .03em;
+  }
+
+  .overview-float-card strong {
+    display: none;
   }
 
   .overview-tool-form {
