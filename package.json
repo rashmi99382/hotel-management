@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server/server.js",
     "dev": "node server/server.js",
-    "check": "node -c server/server.js && node -c server/db.js && node -c server/s3.js && node -c server/auth.js"
+    "check": "node -c server/server.js && node -c server/db.js && node -c server/s3.js && node -c server/auth.js && node -c cloud-sync.js && node -c script.js && node -c services/qr-menu/qr-menu.js && node -c services/table-booking/table-booking.js && node -c services/inventory/inventory.js && node -c services/attendance/attendance.js && node -c services/billing-files/billing-files.js && node -c services/jobs/jobs.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.600.0",

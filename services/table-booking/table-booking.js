@@ -1085,21 +1085,41 @@ window.smartHotelServices.booking = (() => {
     input.click();
   }
 
-  function loadImageFile(file, callback) {
+  function readLocalImageFile(file, callback) {
     const reader = new FileReader();
     reader.addEventListener("load", () => {
       const src = String(reader.result || "");
-      const image = new Image();
-      image.addEventListener("load", () => {
-        callback({
-          src,
-          width: image.naturalWidth || 1180,
-          height: image.naturalHeight || 560
-        });
-      });
-      image.src = src;
+      finishImageLoad(src, callback);
     });
     reader.readAsDataURL(file);
+  }
+
+  function finishImageLoad(src, callback) {
+    const image = new Image();
+    image.addEventListener("load", () => {
+      callback({
+        src,
+        width: image.naturalWidth || 1180,
+        height: image.naturalHeight || 560
+      });
+    });
+    image.addEventListener("error", () => {
+      callback({ src, width: 1180, height: 560 });
+    });
+    image.src = src;
+  }
+
+  function loadImageFile(file, callback) {
+    if (window.smartHotelCloudStorage?.uploadFile) {
+      window.smartHotelCloudStorage.uploadFile(file, "table-booking")
+        .then((src) => finishImageLoad(src, callback))
+        .catch((error) => {
+          console.warn("Table booking upload fell back to local preview.", error);
+          readLocalImageFile(file, callback);
+        });
+      return;
+    }
+    readLocalImageFile(file, callback);
   }
 
   function openLightbox(src, label, type = "image") {

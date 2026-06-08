@@ -369,7 +369,14 @@ window.smartHotelServices.billing = (() => {
       </html>`;
   }
 
-  function readImage(file) {
+  async function readImage(file) {
+    if (file && window.smartHotelCloudStorage?.uploadFile) {
+      try {
+        return await window.smartHotelCloudStorage.uploadFile(file, "billing-files");
+      } catch (error) {
+        console.warn("Billing upload fell back to local preview.", error);
+      }
+    }
     return new Promise((resolve, reject) => {
       if (!file) {
         resolve("");

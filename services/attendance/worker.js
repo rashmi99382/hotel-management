@@ -2,7 +2,7 @@ const STORAGE_KEY = "smartAttendanceSystemState";
 const SIX_MONTH_DAYS = 183;
 const SIX_MONTHS_MS = 1000 * 60 * 60 * 24 * SIX_MONTH_DAYS;
 
-let state = loadState();
+let state = { employees: [], subAdmins: [], attendance: [], activity: [] };
 let activeEmployeeId = "";
 
 function qs(selector) {
@@ -255,4 +255,10 @@ document.addEventListener("visibilitychange", () => {
   if (!document.hidden) refreshFromStorage();
 });
 
-renderCalendar();
+async function bootWorkerAttendance() {
+  await window.smartHotelCloudStorage?.ready?.catch(() => {});
+  state = loadState();
+  renderCalendar();
+}
+
+bootWorkerAttendance();

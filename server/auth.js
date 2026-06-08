@@ -2,6 +2,7 @@ const { CognitoJwtVerifier } = require("aws-jwt-verify");
 
 const userPoolId = process.env.COGNITO_USER_POOL_ID;
 const clientId = process.env.COGNITO_CLIENT_ID;
+const allowPrototypeAuth = process.env.ALLOW_PROTOTYPE_AUTH === "true" || process.env.NODE_ENV !== "production";
 
 const verifier = userPoolId && clientId
   ? CognitoJwtVerifier.create({
@@ -25,7 +26,14 @@ async function optionalAuth(req, _res, next) {
 
 async function requireAuth(req, res, next) {
   if (!verifier) {
-    return res.status(503).json({ error: "Cognito is not configured on this server" });
+    if (!allowPrototypeAuth) {
+      return res.status(503).json({ error: "Cognito is not configured on this server" });
+    }
+    req.user = {
+      sub: req.headers["x-prototype-user"] || "prototype-local-user",
+      prototype: true
+    };
+    return next();
   }
 
   const token = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");

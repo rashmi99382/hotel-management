@@ -346,7 +346,14 @@ function saveQrHotelSettings(patch) {
   return next.hotel;
 }
 
-function readImageAsDataUrl(file) {
+async function readImageAsDataUrl(file) {
+  if (file && window.smartHotelCloudStorage?.uploadFile) {
+    try {
+      return await window.smartHotelCloudStorage.uploadFile(file, "admin-links");
+    } catch (error) {
+      console.warn("Admin link image upload fell back to local preview.", error);
+    }
+  }
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
@@ -771,6 +778,17 @@ function closeProfilePanel() {
 
 function readProfilePhoto(file) {
   return new Promise((resolve, reject) => {
+    if (window.smartHotelCloudStorage?.uploadFile) {
+      window.smartHotelCloudStorage.uploadFile(file, "admin-profile")
+        .then(resolve)
+        .catch(() => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(file);
+        });
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
     reader.onerror = () => reject(reader.error);
@@ -1025,6 +1043,7 @@ loginForm?.addEventListener("submit", async (event) => {
 
   if (isPrototypeLogin(email, password)) {
     activatePrototypeSession(email);
+    await window.smartHotelCloudStorage?.setTenantEmail?.(email);
     loginError.textContent = "";
     loginForm.reset();
     showApp();
@@ -1149,9 +1168,15 @@ document.querySelector("#careerApplyForm")?.addEventListener("submit", (event) =
 });
 window.addEventListener("smartHotelJobsUpdated", renderPublicCareers);
 
-window.smartHotelServices = window.smartHotelServices || {};
-renderPublicCareers();
-bindSidebarSocialLauncher();
-window.smartHotelLocationDirectory.load().then(renderPublicCareers);
-window.addEventListener("hashchange", routeFromHash);
-routeFromHash();
+async function bootSmartHotelApp() {
+  window.smartHotelServices = window.smartHotelServices || {};
+  await window.smartHotelCloudStorage?.ready?.catch(() => {});
+  careerState = loadCareerState();
+  renderPublicCareers();
+  bindSidebarSocialLauncher();
+  window.smartHotelLocationDirectory.load().then(renderPublicCareers);
+  window.addEventListener("hashchange", routeFromHash);
+  await routeFromHash();
+}
+
+bootSmartHotelApp();

@@ -582,7 +582,14 @@ window.smartHotelServices.menu = (() => {
     qs("#mediaModal").classList.remove("is-hidden");
   }
 
-  function fileToDataUrl(file) {
+  async function fileToDataUrl(file) {
+    if (window.smartHotelCloudStorage?.uploadFile) {
+      try {
+        return await window.smartHotelCloudStorage.uploadFile(file, "qr-menu");
+      } catch (error) {
+        console.warn("QR menu upload fell back to local preview.", error);
+      }
+    }
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = () => resolve(String(reader.result));

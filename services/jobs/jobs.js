@@ -194,7 +194,14 @@ window.smartHotelServices.jobs = (() => {
     return Array.from(root.querySelectorAll(selector));
   }
 
-  function readImage(file) {
+  async function readImage(file) {
+    if (file && window.smartHotelCloudStorage?.uploadFile) {
+      try {
+        return await window.smartHotelCloudStorage.uploadFile(file, "jobs");
+      } catch (error) {
+        console.warn("Jobs upload fell back to local preview.", error);
+      }
+    }
     return new Promise((resolve, reject) => {
       if (!file) {
         resolve("");

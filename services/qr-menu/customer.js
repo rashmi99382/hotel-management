@@ -2,7 +2,7 @@ const STORAGE_KEY = "smartQrMenuSystemState";
 const BOOKING_STORAGE_KEY = "smartTableBookingCustomerState";
 const BILL_SETTINGS_KEY = "smartBillDownloadSettings";
 
-const state = (() => {
+let state = (() => {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
   } catch {
@@ -1387,7 +1387,16 @@ function startPopupTimer() {
   }, 30000);
 }
 
-function boot() {
+async function boot() {
+  await window.smartHotelCloudStorage?.ready?.catch(() => {});
+  state = (() => {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+    } catch {
+      return {};
+    }
+  })();
+
   const sharedBill = billPayloadFromUrl();
   if (sharedBill) {
     renderBillViewer(sharedBill);

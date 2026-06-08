@@ -162,7 +162,14 @@ window.smartHotelServices.attendance = (() => {
     return `<div class="employee-avatar">${escapeHtml(initials(employee.name))}</div>`;
   }
 
-  function readImage(file) {
+  async function readImage(file) {
+    if (file && window.smartHotelCloudStorage?.uploadFile) {
+      try {
+        return await window.smartHotelCloudStorage.uploadFile(file, "attendance");
+      } catch (error) {
+        console.warn("Attendance upload fell back to local preview.", error);
+      }
+    }
     return new Promise((resolve, reject) => {
       if (!file) {
         resolve("");

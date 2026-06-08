@@ -1076,14 +1076,20 @@ window.smartHotelServices.inventory = (() => {
     return false;
   }
 
-  function readImage(file) {
+  async function readImage(file) {
+    if (file && !validateImage(file)) {
+      throw new Error("Image too large");
+    }
+    if (file && window.smartHotelCloudStorage?.uploadFile) {
+      try {
+        return await window.smartHotelCloudStorage.uploadFile(file, "inventory");
+      } catch (error) {
+        console.warn("Inventory upload fell back to local preview.", error);
+      }
+    }
     return new Promise((resolve, reject) => {
       if (!file) {
         resolve("");
-        return;
-      }
-      if (!validateImage(file)) {
-        reject(new Error("Image too large"));
         return;
       }
       const reader = new FileReader();

@@ -12,12 +12,13 @@ const { createUploadUrl } = require("./s3");
 const app = express();
 const port = Number(process.env.PORT || 8080);
 const publicRoot = path.resolve(__dirname, "..");
+const stateJsonLimit = process.env.STATE_JSON_LIMIT || "25mb";
 
 app.use(helmet({
   contentSecurityPolicy: false
 }));
 app.use(cors());
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json({ limit: stateJsonLimit }));
 app.use(morgan("combined"));
 app.use(optionalAuth);
 
@@ -66,6 +67,19 @@ app.put("/api/tenants/:tenantId/state/:moduleName", requireAuth, async (req, res
       [tenantId, moduleName, data, req.user?.sub || "system"]
     );
     res.json(result.rows[0]);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete("/api/tenants/:tenantId/state/:moduleName", requireAuth, async (req, res, next) => {
+  try {
+    const { tenantId, moduleName } = req.params;
+    await db.query(
+      "delete from tenant_module_state where tenant_id = $1 and module_name = $2",
+      [tenantId, moduleName]
+    );
+    res.json({ ok: true });
   } catch (error) {
     next(error);
   }
