@@ -1,10 +1,10 @@
-const DEMO_EMAIL = "rashmiranjanabc241947@gmail.com";
-const DEMO_PASSWORD = "Rashmi@123";
+const DEMO_EMAIL = "admin@vistacraft.local";
+const DEMO_PASSWORD = "Demo@123";
 const SESSION_KEY = "smartHotelPrototypeSession";
-const ASSET_VERSION = "mobile-floating-v1";
+const ASSET_VERSION = "pdf-eight-work-v1";
 const PROFILE_KEY = "smartHotelAdminProfile";
 const QR_MENU_STORAGE_KEY = "smartQrMenuSystemState";
-const PUBLIC_HASHES = new Set(["", "home", "design", "product", "plans", "business", "education", "career", "help"]);
+const PUBLIC_HASHES = new Set(["", "home", "design", "product", "plans", "business", "education", "career", "help", "privacy", "legal", "terms"]);
 
 const publicView = document.querySelector("#publicView");
 const loginView = document.querySelector("#loginView");
@@ -551,6 +551,7 @@ function showPublic() {
   appView.classList.add("is-hidden");
   publicView.classList.remove("is-hidden");
   closeProfilePanel();
+  window.smartHotelLegalPolicy?.renderPublicRoute(currentHashName() || "home");
 }
 
 async function routeFromHash() {

@@ -711,9 +711,117 @@ button {
   font-weight: 760;
 }
 
+.feature-card > .button {
+  position: relative;
+  z-index: 4;
+}
+
 .ai-card {
   min-height: 560px;
   background: linear-gradient(145deg, #f28592, #eb6172);
+}
+
+.typing-title {
+  overflow: hidden;
+  width: max-content;
+  max-width: 100%;
+  border-right: 3px solid rgba(255, 255, 255, 0.86);
+  white-space: nowrap;
+  animation: typingReveal 3.4s steps(42, end) both, typingCursor 0.75s step-end infinite;
+}
+
+.cutout-card .typing-title,
+.presentation-card .typing-title,
+.video-card-small .typing-title,
+.edit-card .typing-title {
+  width: 100%;
+  white-space: normal;
+  border-right: 0;
+  animation: softTypeIn 0.9s ease both;
+}
+
+.pixel-rotator,
+.single-card-image,
+.finance-strip,
+.produce-duo {
+  position: absolute;
+  z-index: 1;
+}
+
+.pixel-rotator {
+  overflow: hidden;
+  border-radius: 16px;
+  box-shadow: 0 16px 38px rgba(20, 20, 29, 0.14);
+  isolation: isolate;
+}
+
+.pixel-rotator::after {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, .55) 0 6px, transparent 6px 22px),
+    linear-gradient(0deg, rgba(255, 255, 255, .38) 0 6px, transparent 6px 22px);
+  mix-blend-mode: overlay;
+  opacity: 0;
+  animation: pixelFlash 4.8s linear infinite;
+  content: "";
+}
+
+.pixel-rotator img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transform: scale(1.04);
+  animation: rotateImagePair 9.6s linear infinite;
+  animation-fill-mode: both;
+}
+
+.pixel-rotator img:nth-child(2) {
+  animation-delay: 4.8s;
+}
+
+.pixel-rotator img:nth-child(3) {
+  animation-delay: 9.6s;
+}
+
+.pixel-rotator img:nth-child(4) {
+  animation-delay: 14.4s;
+}
+
+.wide-rotator {
+  left: 40px;
+  right: 40px;
+  bottom: 178px;
+  height: 220px;
+}
+
+.single-card-image {
+  inset: auto 28px 28px;
+  height: 65%;
+  overflow: hidden;
+  border-radius: 16px;
+  box-shadow: 0 16px 34px rgba(19, 21, 29, 0.16);
+}
+
+.single-card-image img,
+.finance-strip img,
+.produce-duo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-card::after {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: radial-gradient(circle at 78% 12%, rgba(255, 255, 255, 0.28), transparent 24%);
+  pointer-events: none;
+  content: "";
 }
 
 .prompt-bar {
@@ -810,6 +918,22 @@ button {
   background: linear-gradient(145deg, #e244bf, #f185c9);
 }
 
+.finance-strip {
+  left: 34px;
+  right: 34px;
+  bottom: 30px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  height: 150px;
+}
+
+.finance-strip img {
+  border: 5px solid rgba(255, 255, 255, 0.84);
+  border-radius: 12px;
+  box-shadow: 0 13px 24px rgba(18, 18, 25, 0.13);
+}
+
 .slides-strip {
   position: absolute;
   left: 0;
@@ -833,6 +957,46 @@ button {
 .social-card {
   min-height: 420px;
   background: linear-gradient(135deg, #372bd8, #6874f6);
+}
+
+.social-rotator {
+  right: 34px;
+  bottom: 32px;
+  width: min(360px, calc(100% - 68px));
+  height: 190px;
+}
+
+.social-mini-icons {
+  position: absolute;
+  left: 34px;
+  bottom: 34px;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(5, 52px);
+  gap: 10px;
+}
+
+.social-mini-icons span {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 12px 24px rgba(22, 20, 80, 0.2);
+}
+
+.social-mini-icons img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.social-mini-icons strong {
+  color: #1f6af0;
+  font-size: 21px;
+  font-weight: 950;
 }
 
 .social-icons {
@@ -865,6 +1029,34 @@ button {
 .edit-card {
   min-height: 560px;
   background: linear-gradient(145deg, #e95f22, #ff8737);
+}
+
+.tall-rotator {
+  left: 32px;
+  right: 32px;
+  bottom: 34px;
+  height: 65%;
+}
+
+.tall-rotator img {
+  animation-name: rotateImageQuad;
+  animation-duration: 19.2s;
+}
+
+.produce-duo {
+  left: 32px;
+  right: 32px;
+  bottom: 34px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  height: 62%;
+}
+
+.produce-duo img {
+  min-height: 0;
+  border-radius: 16px;
+  box-shadow: 0 14px 30px rgba(80, 28, 10, 0.18);
 }
 
 .timeline-mock {
@@ -1011,10 +1203,14 @@ button {
   overflow: hidden;
   height: 480px;
   border-radius: 16px;
-  background:
-    radial-gradient(circle at 60% 18%, #ffd889 0 11%, #ff70b9 12% 23%, transparent 24%),
-    linear-gradient(145deg, #101a38 0%, #25206a 50%, #ef79a5 100%);
+  background: #101a38;
   box-shadow: 0 10px 24px rgba(28, 26, 55, 0.12);
+}
+
+.generator-rotator {
+  inset: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .moon {
@@ -1136,6 +1332,174 @@ button {
   border-radius: 18px;
   padding: 42px 36px;
   background: #d5f0df;
+}
+
+.live-service-card {
+  background: #eaf7ef;
+  box-shadow: 0 22px 44px rgba(28, 39, 66, 0.08);
+}
+
+.booking-service-card {
+  background: #eaf7ef;
+}
+
+.qr-service-card {
+  background: #edf8f1;
+}
+
+.inventory-service-card {
+  background: #fff0c8;
+}
+
+.attendance-service-card {
+  background: #e5f0ff;
+}
+
+.job-service-card {
+  background: #f3e9ff;
+}
+
+.bill-code-service-card {
+  background: #ffe7e5;
+}
+
+.bill-pdf-service-card {
+  background: #e8fff6;
+}
+
+.service-card-visual {
+  position: absolute;
+  inset: auto 0 0;
+  height: 52%;
+  padding: 34px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.service-circle {
+  display: grid;
+  place-items: center;
+  width: 116px;
+  height: 116px;
+  border-radius: 50%;
+  background: #07540b;
+  color: #ffffff;
+  font-size: 38px;
+  font-weight: 950;
+  letter-spacing: -1px;
+}
+
+.service-card-visual strong {
+  position: absolute;
+  left: 154px;
+  top: 62px;
+  color: #59c979;
+  font-size: 48px;
+  font-weight: 540;
+  letter-spacing: -1px;
+}
+
+.service-bar {
+  position: absolute;
+  left: 34px;
+  right: 34px;
+  bottom: 82px;
+  height: 46px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #0b4010 0 22%, #f1f56d 22% 48%, #72c982 48%);
+}
+
+.service-note {
+  position: absolute;
+  left: 34px;
+  right: 34px;
+  bottom: 24px;
+  color: #536070;
+  font-size: 16px;
+  font-weight: 780;
+}
+
+.green-bar {
+  background: linear-gradient(90deg, #0b4010 0 20%, #f1f56d 20% 44%, #72c982 44%);
+}
+
+.stock-bar {
+  background: linear-gradient(90deg, #165d16 0 35%, #f5b041 35% 55%, #ef4444 55%);
+}
+
+.attendance-bar {
+  background: linear-gradient(90deg, #2563eb 0 45%, #93c5fd 45% 70%, #16a34a 70%);
+}
+
+.job-bar {
+  background: linear-gradient(90deg, #7c3aed 0 36%, #f472b6 36% 62%, #fbbf24 62%);
+}
+
+.security-bar {
+  background: linear-gradient(90deg, #111827 0 40%, #2563eb 40% 72%, #22c55e 72%);
+}
+
+.pdf-bar {
+  background: linear-gradient(90deg, #0f766e 0 34%, #14b8a6 34% 62%, #e5e7eb 62%);
+}
+
+@keyframes typingReveal {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+@keyframes typingCursor {
+  50% {
+    border-color: transparent;
+  }
+}
+
+@keyframes softTypeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pixelFlash {
+  0%, 44%, 100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  48%, 54% {
+    opacity: 0.64;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes rotateImagePair {
+  0%, 45% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+  48%, 100% {
+    opacity: 0;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes rotateImageQuad {
+  0%, 20% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+  23%, 100% {
+    opacity: 0;
+    transform: scale(1.08);
+  }
 }
 
 .business-card h3 {
@@ -3104,6 +3468,59 @@ select:focus {
     padding: 28px;
   }
 
+  .typing-title {
+    width: 100%;
+    border-right: 0;
+    white-space: normal;
+    animation: softTypeIn 0.9s ease both;
+  }
+
+  .wide-rotator {
+    left: 22px;
+    right: 22px;
+    bottom: 160px;
+    height: 170px;
+  }
+
+  .single-card-image,
+  .tall-rotator,
+  .produce-duo {
+    left: 22px;
+    right: 22px;
+    bottom: 24px;
+  }
+
+  .finance-strip {
+    left: 22px;
+    right: 22px;
+    grid-template-columns: 1fr;
+    height: 210px;
+    overflow: hidden;
+  }
+
+  .social-rotator {
+    right: 22px;
+    left: 22px;
+    width: auto;
+    height: 160px;
+  }
+
+  .social-mini-icons {
+    left: 22px;
+    grid-template-columns: repeat(5, 42px);
+    gap: 8px;
+  }
+
+  .social-mini-icons span {
+    width: 42px;
+    height: 42px;
+  }
+
+  .produce-duo {
+    grid-template-columns: 1fr 1fr;
+    height: 230px;
+  }
+
   .social-icons {
     right: 24px;
     grid-template-columns: repeat(3, 70px);
@@ -3142,6 +3559,18 @@ select:focus {
 
   .style-picker {
     grid-template-columns: repeat(3, 76px);
+  }
+
+  .service-card-visual strong {
+    left: 126px;
+    top: 60px;
+    font-size: 38px;
+  }
+
+  .service-circle {
+    width: 92px;
+    height: 92px;
+    font-size: 30px;
   }
 
   .section-heading.compact {

@@ -4,11 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Smart Hotel Platform</title>
-    <link rel="stylesheet" href="style.css?v=mobile-floating-v1" />
-    <link rel="stylesheet" href="sidebar-toggle.css?v=mobile-floating-v1" />
-    <script defer src="social-icons.js?v=mobile-floating-v1"></script>
-    <script defer src="script.js?v=mobile-floating-v1"></script>
-    <script defer src="sidebar-toggle.js?v=mobile-floating-v1"></script>
+    <link rel="stylesheet" href="style.css?v=pdf-eight-work-v1" />
+    <link rel="stylesheet" href="sidebar-toggle.css?v=pdf-eight-work-v1" />
+    <link rel="stylesheet" href="legal-policy.css?v=legal-policy-v1" />
+    <script defer src="social-icons.js?v=pdf-eight-work-v1"></script>
+    <script defer src="legal-policy.js?v=legal-policy-v1"></script>
+    <script defer src="script.js?v=pdf-eight-work-v1"></script>
+    <script defer src="sidebar-toggle.js?v=pdf-eight-work-v1"></script>
   </head>
   <body>
     <main id="publicView" class="public-view">
@@ -31,7 +33,7 @@
         </div>
       </header>
 
-      <section class="hero-section" id="home">
+      <section class="hero-section" id="home" data-public-main>
         <div class="hero-inner">
           <div class="hero-copy">
             <h1>Where ideas become art</h1>
@@ -68,74 +70,79 @@
         </section>
       </section>
 
-      <section class="feature-grid" id="product" aria-label="Featured tools">
+      <section class="feature-grid" id="product" aria-label="Featured tools" data-public-main>
         <article class="feature-card ai-card">
-          <h3>Watch your words turn into production-quality visuals with AI</h3>
+          <h3 class="typing-title">Provide all plans with 80% discount.</h3>
           <button class="button light" type="button" data-open-login>Generate media</button>
+          <div class="pixel-rotator wide-rotator" aria-hidden="true">
+            <img src="assets/pdf-work-1-2/page02-img1.png" alt="" />
+            <img src="assets/pdf-work-1-2/page02-img2.png" alt="" />
+          </div>
           <form class="prompt-bar">
             <input value="Surreal backgrounds, ultra realistic, colorful" aria-label="AI prompt" />
             <button type="button" data-open-login>Create</button>
           </form>
         </article>
 
-        <article class="feature-card cutout-card">
-          <h3>Bye-bye background, in a single click</h3>
-          <button class="button light" type="button" data-open-login>Remove background</button>
-          <div class="portrait-preview" aria-hidden="true">
-            <span class="spark spark-one"></span>
-            <span class="spark spark-two"></span>
-            <span class="portrait-face"></span>
+        <article class="feature-card cutout-card image-card">
+          <h3 class="typing-title">Your health is our 1st priority.</h3>
+          <button class="button light" type="button" data-open-login>Learn more</button>
+          <div class="single-card-image" aria-hidden="true">
+            <img src="assets/pdf-work-1-2/page04-img1.png" alt="" />
           </div>
         </article>
 
-        <article class="feature-card presentation-card">
-          <h3>Design, present and inspire with presentations</h3>
-          <button class="button light" type="button" data-open-login>Create a presentation</button>
-          <div class="slides-strip" aria-hidden="true">
-            <span></span>
-            <span></span>
-            <span></span>
+        <article class="feature-card presentation-card image-card">
+          <h3 class="typing-title">Your personal finance manager.</h3>
+          <button class="button light" type="button" data-open-login>Plan finance</button>
+          <div class="finance-strip" aria-hidden="true">
+            <img src="assets/pdf-work-1-2/page10-img1.png" alt="" />
+            <img src="assets/pdf-work-1-2/page10-img2.png" alt="" />
+            <img src="assets/pdf-work-1-2/page11-img1.png" alt="" />
           </div>
         </article>
 
-        <article class="feature-card social-card">
+        <article class="feature-card social-card image-card">
           <h3>Create scroll-stopping social media content for any platform</h3>
           <button class="button light" type="button" data-open-login>Design for social media</button>
-          <div class="social-icons" aria-hidden="true">
-            <span>◎</span>
-            <span>☘</span>
-            <span>P</span>
-            <span>X</span>
-            <span>f</span>
-            <span>in</span>
+          <div class="pixel-rotator social-rotator" aria-hidden="true">
+            <img src="assets/pdf-work-1-2/page15-img1.png" alt="" />
+            <img src="assets/pdf-work-1-2/page15-img2.png" alt="" />
+          </div>
+          <div class="social-mini-icons" aria-hidden="true">
+            <span><img src="assets/pdf-work-1-2/page16-img1.png" alt="" /></span>
+            <span><img src="assets/pdf-work-1-2/page17-img1.png" alt="" /></span>
+            <span><img src="assets/pdf-work-1-2/page19-img1.png" alt="" /></span>
+            <span><strong>f</strong></span>
+            <span><strong>MAP</strong></span>
           </div>
         </article>
 
-        <article class="feature-card video-card-small">
-          <h3>Make your videos look awesome on any screen</h3>
+        <article class="feature-card video-card-small image-card">
+          <h3 class="typing-title">The architecture design update.</h3>
           <button class="button light" type="button" data-open-login>Edit a video</button>
-          <div class="timeline-mock" aria-hidden="true">
-            <span class="clip"></span>
-            <span class="wave"></span>
-            <span class="photo-tile"></span>
+          <div class="pixel-rotator tall-rotator" aria-hidden="true">
+            <img src="assets/pdf-work-1-2/page05-img1.png" alt="" />
+            <img src="assets/pdf-work-1-2/page05-img2.png" alt="" />
+            <img src="assets/pdf-work-1-2/page06-img1.png" alt="" />
+            <img src="assets/pdf-work-1-2/page06-img2.png" alt="" />
           </div>
         </article>
 
-        <article class="feature-card edit-card">
-          <h3>Make easy edits with an AI-powered editor</h3>
+        <article class="feature-card edit-card image-card">
+          <h3 class="typing-title">We provide all raw produce direct from farmer 100% pure.</h3>
           <button class="button light" type="button" data-open-login>Edit an image</button>
-          <div class="editor-mock" aria-hidden="true">
-            <span class="move-handle"></span>
-            <span class="label-chip">Maya</span>
-            <span class="product-bottle"></span>
+          <div class="produce-duo" aria-hidden="true">
+            <img src="assets/pdf-work-1-2/page13-img1.png" alt="" />
+            <img src="assets/pdf-work-1-2/page13-img2.png" alt="" />
           </div>
         </article>
       </section>
 
-      <section class="image-generator" id="education">
+      <section class="image-generator" id="education" data-public-main>
         <div class="generator-copy">
-          <h2>Try Image Generator</h2>
-          <p>Turn pure text into art with Magic Studio and our range of AI art generator tools. Enter a prompt, pick a style, and watch your words transform.</p>
+          <h2>From YouTube videos to Instagram reels, Facebook posts, ads, thumbnails, and banners.</h2>
+          <p>Share your idea, and we create professional content for your brand.</p>
           <form class="generator-form">
             <span aria-hidden="true">✧</span>
             <input value="Moon rising over the mountains" aria-label="Image prompt" />
@@ -145,58 +152,97 @@
         </div>
 
         <div class="generator-art" aria-hidden="true">
-          <div class="moon"></div>
-          <div class="mountain mountain-one"></div>
-          <div class="mountain mountain-two"></div>
+          <div class="pixel-rotator generator-rotator">
+            <img src="assets/pdf-work-1-2/page15-img1.png" alt="" />
+            <img src="assets/pdf-work-1-2/page15-img2.png" alt="" />
+          </div>
           <div class="style-picker">
-            <button class="style-option active" type="button"><span></span>Dreamy</button>
-            <button class="style-option" type="button"><span></span>Anime</button>
-            <button class="style-option" type="button"><span></span>Watercol...</button>
-            <button class="style-option" type="button"><span></span>Filmic</button>
-            <button class="style-option" type="button"><span>20+</span>More</button>
+            <button class="style-option active" type="button"><span>▶</span>YouTube</button>
+            <button class="style-option" type="button"><span>IG</span>Reels</button>
+            <button class="style-option" type="button"><span>f</span>Posts</button>
+            <button class="style-option" type="button"><span>AD</span>Ads</button>
+            <button class="style-option" type="button"><span>+</span>More</button>
           </div>
         </div>
       </section>
 
-      <section class="business-section" id="business">
+      <section class="business-section" id="business" data-public-main>
         <div class="section-heading">
-          <h2>Our Business Features</h2>
-          <p>Enhance the design capabilities of your team or your entire business with flexible plans. Enterprise teams can contact sales for custom support.</p>
+          <h2>Our Live Features</h2>
+          <p>We provide smart digital services for hotels and restaurants, including booking, QR menu, inventory, attendance, jobs, billing security, and custom bill PDF design - everything your business needs in one powerful platform.</p>
         </div>
 
         <div class="carousel-wrap">
           <button class="carousel-arrow prev" type="button" aria-label="Previous business feature">‹</button>
           <div class="business-carousel" id="businessCarousel">
-            <article class="business-card">
-              <h3>Set up a brand kit to unify your designs</h3>
+            <article class="business-card live-service-card booking-service-card">
+              <h3>Booking QR Service for smart hotels</h3>
               <button class="button light" type="button" data-open-login>Learn more</button>
-              <div class="brand-kit-visual" aria-hidden="true">
-                <span class="brand-dot">co</span>
-                <span class="brand-word">Craft</span>
-                <span class="palette"></span>
+              <div class="service-card-visual" aria-hidden="true">
+                <span class="service-circle">QR</span>
+                <strong>Booking</strong>
+                <span class="service-bar"></span>
+                <span class="service-note">Scan & book instantly</span>
               </div>
             </article>
-            <article class="business-card">
-              <h3>Empower your team to scale content</h3>
+            <article class="business-card live-service-card qr-service-card">
+              <h3>Smart QR menu service for restaurants</h3>
               <button class="button light" type="button" data-open-login>Learn more</button>
-              <div class="report-visual" aria-hidden="true"></div>
+              <div class="service-card-visual" aria-hidden="true">
+                <span class="service-circle">QR</span>
+                <strong>Menu</strong>
+                <span class="service-bar green-bar"></span>
+                <span class="service-note">Food, price, video and offers</span>
+              </div>
             </article>
-            <article class="business-card">
-              <h3>Collaborate and create in real time</h3>
+            <article class="business-card live-service-card inventory-service-card">
+              <h3>Inventory Management</h3>
               <button class="button light" type="button" data-open-login>View plans</button>
-              <div class="collab-visual" aria-hidden="true">
-                <span>Sumita</span>
-                <strong>PROJECT OVERVIEW</strong>
-                <em>Anita</em>
+              <div class="service-card-visual" aria-hidden="true">
+                <span class="service-circle">ST</span>
+                <strong>Stock</strong>
+                <span class="service-bar stock-bar"></span>
+                <span class="service-note">Low-stock alerts and daily records</span>
               </div>
             </article>
-            <article class="business-card">
-              <h3>Protect and secure your data</h3>
+            <article class="business-card live-service-card attendance-service-card">
+              <h3>Attendance Management</h3>
               <button class="button light" type="button" data-open-login>Learn more</button>
-              <div class="security-visual" aria-hidden="true">
-                <p>✓ Use secure sharing</p>
-                <p>✓ Single Sign-On</p>
-                <p>✓ Set team roles</p>
+              <div class="service-card-visual" aria-hidden="true">
+                <span class="service-circle">AT</span>
+                <strong>Staff</strong>
+                <span class="service-bar attendance-bar"></span>
+                <span class="service-note">Records, approval and reports</span>
+              </div>
+            </article>
+            <article class="business-card live-service-card job-service-card">
+              <h3>Job Posting Service</h3>
+              <button class="button light" type="button" data-open-login>Learn more</button>
+              <div class="service-card-visual" aria-hidden="true">
+                <span class="service-circle">JB</span>
+                <strong>Hiring</strong>
+                <span class="service-bar job-bar"></span>
+                <span class="service-note">Post jobs and receive applications</span>
+              </div>
+            </article>
+            <article class="business-card live-service-card bill-code-service-card">
+              <h3>Bill Security Code</h3>
+              <button class="button light" type="button" data-open-login>Learn more</button>
+              <div class="service-card-visual" aria-hidden="true">
+                <span class="service-circle">SC</span>
+                <strong>Secure</strong>
+                <span class="service-bar security-bar"></span>
+                <span class="service-note">Avoid fake bills with secure codes</span>
+              </div>
+            </article>
+            <article class="business-card live-service-card bill-pdf-service-card">
+              <h3>Bill PDF Design</h3>
+              <button class="button light" type="button" data-open-login>Learn more</button>
+              <div class="service-card-visual" aria-hidden="true">
+                <span class="service-circle">PDF</span>
+                <strong>Print</strong>
+                <span class="service-bar pdf-bar"></span>
+                <span class="service-note">Logo, GSTIN, watermark and A4 PDF</span>
               </div>
             </article>
           </div>
@@ -204,7 +250,7 @@
         </div>
       </section>
 
-      <section class="template-gallery">
+      <section class="template-gallery" data-public-main>
         <div class="section-heading compact">
           <h2>Templates for every moment</h2>
           <div class="gallery-actions">
@@ -226,12 +272,12 @@
         </div>
       </section>
 
-      <section class="plans-section" id="plans">
+      <section class="plans-section" id="plans" data-public-main>
         <p>Unlock premium templates, more powerful design tools and AI features with a VistaCraft plan. Educational institutions and non-profits can use premium features for free.</p>
         <button class="button secondary" type="button" data-open-login>See plans and pricing</button>
       </section>
 
-      <section class="career-section" id="career">
+      <section class="career-section" id="career" data-public-main>
         <div class="career-heading">
           <div>
             <p class="eyebrow">Career</p>
@@ -277,6 +323,40 @@
         </article>
       </section>
 
+      <section id="privacy" class="policy-page is-hidden" data-policy-page="privacy" aria-label="Privacy Policy">
+        <div class="policy-hero">
+          <p class="policy-kicker">Privacy Policy</p>
+          <h1 class="policy-gradient-title">Privacy, data and customer trust</h1>
+          <p>How VistaCraft collects, protects, and uses hotel, restaurant, customer, staff, inventory, billing, booking, and QR menu information.</p>
+          <div class="policy-quick-actions">
+            <a href="#legal">Open Legal & Terms</a>
+            <a href="#help">Back to footer</a>
+          </div>
+        </div>
+        <div class="policy-meta">
+          <span>Last updated: 08 June 2026</span>
+          <span>Website / Platform: VistaCraft Smart Hotel Platform</span>
+        </div>
+        <div id="privacyPolicyList" class="policy-accordion"></div>
+      </section>
+
+      <section id="legal" class="policy-page is-hidden" data-policy-page="legal" aria-label="Legal Policy, Privacy Policy and Terms of Use">
+        <div class="policy-hero legal-hero">
+          <p class="policy-kicker">Legal Policy, Privacy Policy & Terms of Use</p>
+          <h1 class="policy-gradient-title">Rules for a clear digital hotel business</h1>
+          <p>Terms for hotel owners, restaurant owners, staff, suppliers, customers, bookings, QR menus, live bills, attendance, inventory, and future services.</p>
+          <div class="policy-quick-actions">
+            <a href="#privacy">Open Privacy Policy</a>
+            <a href="#help">Back to footer</a>
+          </div>
+        </div>
+        <div class="policy-meta">
+          <span>Last updated: 08 June 2026</span>
+          <span>Website / Platform: VistaCraft Smart Hotel Platform</span>
+        </div>
+        <div id="legalPolicyList" class="policy-accordion"></div>
+      </section>
+
       <footer class="site-footer" id="help">
         <div class="footer-brand">
           <a class="brand" href="#home">VistaCraft</a>
@@ -284,6 +364,19 @@
           <div class="download-buttons">
             <button class="button secondary" type="button" data-open-login>Windows</button>
             <button class="button secondary" type="button" data-open-login>Mac</button>
+          </div>
+          <div class="language-settings">
+            <span>Language settings</span>
+            <button id="languagePickerButton" class="language-pill" type="button" aria-expanded="false" aria-controls="languagePanel">
+              <span aria-hidden="true">◎</span>
+              <strong id="selectedLanguageLabel">English (India)</strong>
+              <span aria-hidden="true">⌄</span>
+            </button>
+            <div id="languagePanel" class="language-panel is-hidden">
+              <label for="languageSearch">Change language</label>
+              <input id="languageSearch" type="search" placeholder="Search language" />
+              <select id="siteLanguageSelect" size="8" aria-label="Change language"></select>
+            </div>
           </div>
         </div>
         <div>
@@ -317,7 +410,22 @@
           <a href="#help">Security</a>
           <a href="#help">Trust Centre</a>
           <a href="#help">Accessibility</a>
+          <a href="#privacy">Privacy</a>
+          <a href="#legal">Legal</a>
+          <a href="#terms">Terms</a>
           <a href="#help">Sitemap</a>
+        </div>
+        <div class="footer-bottom">
+          <div class="footer-language-mini">
+            <span aria-hidden="true">◎</span>
+            <span id="footerLanguageLabel">English (India)</span>
+          </div>
+          <div id="footerSocialIcons" class="footer-social-icons" aria-label="Social links"></div>
+          <nav aria-label="Legal links">
+            <a href="#privacy">Privacy</a>
+            <a href="#terms">Terms</a>
+          </nav>
+          <span>© 2026 All Rights Reserved</span>
         </div>
       </footer>
     </main>
