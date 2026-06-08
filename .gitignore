@@ -1,0 +1,8 @@
+node_modules/
+.env
+.env.*
+!.env.example
+aws/terraform/.terraform/
+aws/terraform/.terraform.lock.hcl
+aws/terraform/terraform.tfstate*
+aws/terraform/terraform.tfvars

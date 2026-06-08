@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+APP_DIR="/opt/smart-hotel"
+
+apt-get update -y
+apt-get install -y ca-certificates curl git nginx
+
+if ! command -v node >/dev/null 2>&1; then
+  curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+  apt-get install -y nodejs
+fi
+
+mkdir -p "$APP_DIR"
+chown -R ubuntu:ubuntu "$APP_DIR"
+
+if [ "${app_repo_url}" != "" ] && [ ! -d "$APP_DIR/.git" ]; then
+  sudo -u ubuntu git clone --branch "${app_repo_branch}" "${app_repo_url}" "$APP_DIR"
+fi
+
+cat > "$APP_DIR/.env.aws.template" <<'EOF'
+NODE_ENV=production
+PORT=8080
+PUBLIC_BASE_URL=${public_base_url}
+
+AWS_REGION=${aws_region}
+S3_UPLOAD_BUCKET=${s3_upload_bucket}
+AWS_ACCESS_KEY_ID=PASTE_TERRAFORM_OUTPUT_s3_access_key_id
+AWS_SECRET_ACCESS_KEY=PASTE_TERRAFORM_OUTPUT_s3_secret_access_key
+
+DATABASE_URL=postgres://${database_user}:CHANGE_DB_PASSWORD@${database_host}:5432/${database_name}
+
+COGNITO_USER_POOL_ID=${cognito_pool_id}
+COGNITO_CLIENT_ID=${cognito_client_id}
+
+RAZORPAY_KEY_ID=${razorpay_key_id}
+RAZORPAY_KEY_SECRET=PASTE_RAZORPAY_SECRET_ON_SERVER_ONLY
+EOF
+
+cat > /etc/systemd/system/smart-hotel.service <<'EOF'
+[Unit]
+Description=Smart Hotel Platform
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/opt/smart-hotel
+EnvironmentFile=/opt/smart-hotel/.env
+ExecStart=/usr/bin/npm start
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+cat > /etc/nginx/sites-available/smart-hotel <<'EOF'
+server {
+  listen 80;
+  server_name _;
+
+  client_max_body_size 40m;
+
+  location / {
+    proxy_pass http://127.0.0.1:8080;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+}
+EOF
+
+ln -sf /etc/nginx/sites-available/smart-hotel /etc/nginx/sites-enabled/smart-hotel
+rm -f /etc/nginx/sites-enabled/default
+systemctl enable nginx
+systemctl restart nginx
+
+if [ -f "$APP_DIR/package.json" ]; then
+  cd "$APP_DIR"
+  sudo -u ubuntu npm install --omit=dev
+  if [ ! -f "$APP_DIR/.env" ]; then
+    cp "$APP_DIR/.env.aws.template" "$APP_DIR/.env"
+  fi
+  systemctl enable smart-hotel
+  systemctl restart smart-hotel || true
+fi

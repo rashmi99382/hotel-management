@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign up | Smart Hotel Platform</title>
+    <link rel="stylesheet" href="auth.css?v=auth-laser-v1" />
+    <script defer src="auth-laser.js?v=auth-laser-v1"></script>
+    <script defer src="auth.js?v=auth-laser-v1"></script>
+  </head>
+  <body class="auth-page" data-auth-page="signup">
+    <div class="auth-flow" aria-hidden="true">
+      <canvas id="authLaserCanvas" class="auth-laser-canvas"></canvas>
+      <span class="auth-flow-beam"></span>
+      <span class="auth-flow-panel"></span>
+      <span class="auth-flow-glow"></span>
+    </div>
+
+    <main class="auth-shell">
+      <section class="auth-card" aria-labelledby="signupTitle">
+        <div class="auth-copy">
+          <p class="auth-eyebrow">Prototype access</p>
+          <h1 id="signupTitle">Smart Hotel Platform</h1>
+          <p>Sign in to manage restaurant, hotel, staff, attendance, inventory, and jobs from one simple control panel.</p>
+        </div>
+
+        <form id="authSignupForm" class="auth-form">
+          <label for="signupName">Owner name</label>
+          <input id="signupName" name="name" type="text" autocomplete="name" placeholder="Enter owner name" required />
+
+          <label for="signupEmail">Gmail</label>
+          <input id="signupEmail" name="email" type="email" autocomplete="username" placeholder="Enter Gmail" required />
+
+          <label for="signupPassword">Password</label>
+          <input id="signupPassword" name="password" type="password" autocomplete="new-password" placeholder="Enter password" required />
+
+          <label for="signupConfirm">Confirm password</label>
+          <input id="signupConfirm" name="confirmPassword" type="password" autocomplete="new-password" placeholder="Enter password again" required />
+
+          <p id="authMessage" class="auth-message" role="alert"></p>
+          <button class="auth-primary" type="submit">Sign up</button>
+          <button class="auth-secondary" type="button" data-auth-back>Back to main website</button>
+          <a class="auth-text-link" href="login.html">Already have access? Log in</a>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>

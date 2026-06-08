@@ -1,0 +1,27 @@
+aws_region = "ap-south-1"
+
+project_name = "smart-hotel"
+
+# Lightsail 4 GB RAM / 80 GB SSD class.
+lightsail_bundle_id = "medium_3_0"
+
+# Optional: let Lightsail clone your GitHub repo on first boot.
+app_repo_url    = "https://github.com/rashmi99382/hotel-management.git"
+app_repo_branch = "main"
+
+# RDS needs your AWS VPC and at least two subnets.
+vpc_id        = "vpc-xxxxxxxx"
+db_subnet_ids = ["subnet-xxxxxxxx", "subnet-yyyyyyyy"]
+
+db_password = "CHANGE_TO_A_STRONG_PASSWORD"
+
+# Optional admin access to RDS from your office/home IP.
+admin_cidr_blocks = ["203.0.113.10/32"]
+
+# Optional Route 53 domain.
+domain_name    = "app.example.com"
+hosted_zone_id = "Z1234567890ABC"
+
+# Keep the secret only in Terraform/server env, never in browser JS.
+razorpay_key_id     = "rzp_test_Sz2Mt6BNwHKPsr"
+razorpay_key_secret = "PASTE_SECRET_ONLY_WHEN_APPLYING"

@@ -1,9 +1,16 @@
-const DEMO_EMAIL = "admin@vistacraft.local";
-const DEMO_PASSWORD = "Demo@123";
+const DEMO_EMAIL = "rashmiranjanabc241947@gmail.com";
+const DEMO_PASSWORD = "Rashmi@123";
 const SESSION_KEY = "smartHotelPrototypeSession";
+const SESSION_EMAIL_KEY = "smartHotelPrototypeSessionEmail";
+const OWNER_ACCOUNT_KEY = "smartHotelPrototypeOwnerAccount";
 const ASSET_VERSION = "pdf-eight-work-v1";
 const PROFILE_KEY = "smartHotelAdminProfile";
 const QR_MENU_STORAGE_KEY = "smartQrMenuSystemState";
+const SUBSCRIPTION_KEY = "smartHotelSubscriptionStatus";
+const RAZORPAY_KEY_ID = "rzp_test_Sz2Mt6BNwHKPsr";
+const SUBSCRIPTION_AMOUNT_PAISE = 900;
+const SUBSCRIPTION_PRICE_DISPLAY = "₹9";
+const SUBSCRIPTION_REAL_PRICE_DISPLAY = "₹299/month";
 const PUBLIC_HASHES = new Set(["", "home", "design", "product", "plans", "business", "education", "career", "help", "privacy", "legal", "terms"]);
 
 const publicView = document.querySelector("#publicView");
@@ -505,6 +512,11 @@ const services = {
     title: "Inbuilt Job Platform",
     folder: "jobs",
     file: "jobs"
+  },
+  subscription: {
+    title: "Subscription",
+    folder: "subscription",
+    file: "subscription"
   }
 };
 
@@ -532,18 +544,170 @@ function isPublicHash(hash = currentHashName()) {
   return PUBLIC_HASHES.has(hash) || !services[hash];
 }
 
+function authPageUrl(page) {
+  const hash = currentHashName();
+  const next = services[hash] ? `#${hash}` : "#overview";
+  return `${page}.html?next=${encodeURIComponent(next)}`;
+}
+
+function loadOwnerAccount() {
+  try {
+    return JSON.parse(localStorage.getItem(OWNER_ACCOUNT_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function activatePrototypeSession(email) {
+  localStorage.setItem(SESSION_KEY, "active");
+  localStorage.setItem(SESSION_EMAIL_KEY, email);
+}
+
+function isPrototypeLogin(email, password) {
+  const owner = loadOwnerAccount();
+  return (email === DEMO_EMAIL && password === DEMO_PASSWORD)
+    || (email === owner.email && password === owner.password);
+}
+
+function currentSessionEmail() {
+  const owner = loadOwnerAccount();
+  return localStorage.getItem(SESSION_EMAIL_KEY) || owner.email || DEMO_EMAIL;
+}
+
+function loadSubscriptionStatus() {
+  try {
+    return JSON.parse(localStorage.getItem(SUBSCRIPTION_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveSubscriptionStatus(status) {
+  localStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(status));
+}
+
+function hasActiveSubscription() {
+  const status = loadSubscriptionStatus();
+  return Boolean(status.active && (!status.email || status.email === currentSessionEmail()));
+}
+
+function updateSubscriptionUi() {
+  if (!appView) return;
+  const active = hasActiveSubscription();
+  appView.classList.toggle("subscription-active", active);
+  appView.classList.toggle("subscription-inactive", !active);
+}
+
+function markSubscriptionPaid(response = {}) {
+  saveSubscriptionStatus({
+    active: true,
+    email: currentSessionEmail(),
+    plan: "Smart Hotel monthly prototype",
+    amount: SUBSCRIPTION_PRICE_DISPLAY,
+    realPlan: SUBSCRIPTION_REAL_PRICE_DISPLAY,
+    paidAt: new Date().toISOString(),
+    paymentId: response.razorpay_payment_id || response.paymentId || "prototype-test-payment"
+  });
+  updateSubscriptionUi();
+  window.dispatchEvent(new CustomEvent("smartHotelSubscriptionUpdated"));
+  enforceSubscriptionGate(selectedServiceFromHash());
+}
+
+function openSubscriptionPayment() {
+  if (!window.Razorpay) {
+    alert("Razorpay checkout is not loaded. Please check the internet connection and try again.");
+    return;
+  }
+
+  const checkout = new window.Razorpay({
+    key: RAZORPAY_KEY_ID,
+    amount: SUBSCRIPTION_AMOUNT_PAISE,
+    currency: "INR",
+    name: "Smart Hotel Platform",
+    description: `${SUBSCRIPTION_PRICE_DISPLAY} subscription test payment`,
+    prefill: {
+      email: currentSessionEmail()
+    },
+    theme: {
+      color: "#2563eb"
+    },
+    handler: markSubscriptionPaid
+  });
+
+  checkout.open();
+}
+
+function subscriptionLockBannerHtml() {
+  return `
+    <aside class="subscription-lock-banner" aria-label="Subscription required">
+      <div>
+        <span>Subscription required</span>
+        <strong>Uploads and admin actions are locked</strong>
+        <p>You can view this page now. Pay ${SUBSCRIPTION_PRICE_DISPLAY} in Razorpay test mode to add photos, videos, menu items, rooms, staff, inventory and jobs.</p>
+      </div>
+      <div class="subscription-lock-actions">
+        <button class="primary-button" type="button" data-open-subscription-payment>Pay ${SUBSCRIPTION_PRICE_DISPLAY}</button>
+        <button class="secondary-button" type="button" data-open-subscription-page>View plan</button>
+      </div>
+    </aside>
+  `;
+}
+
+function restoreSubscriptionGate() {
+  serviceHost?.querySelectorAll("[data-subscription-disabled='true']").forEach((control) => {
+    control.disabled = false;
+    control.removeAttribute("aria-disabled");
+    control.classList.remove("subscription-disabled-control");
+    delete control.dataset.subscriptionDisabled;
+  });
+  serviceHost?.querySelector(".subscription-lock-banner")?.remove();
+}
+
+function enforceSubscriptionGate(sectionId) {
+  restoreSubscriptionGate();
+  updateSubscriptionUi();
+  if (!serviceHost || hasActiveSubscription() || sectionId === "overview" || sectionId === "subscription") return;
+
+  const section = serviceHost.querySelector(".service-section") || serviceHost.firstElementChild;
+  if (section) {
+    section.insertAdjacentHTML("afterbegin", subscriptionLockBannerHtml());
+  }
+
+  serviceHost.querySelector("[data-open-subscription-payment]")?.addEventListener("click", openSubscriptionPayment);
+  serviceHost.querySelector("[data-open-subscription-page]")?.addEventListener("click", () => setSection("subscription"));
+
+  serviceHost.querySelectorAll("button, input, select, textarea").forEach((control) => {
+    if (control.closest(".subscription-lock-banner")) return;
+    control.dataset.subscriptionDisabled = "true";
+    control.disabled = true;
+    control.setAttribute("aria-disabled", "true");
+    control.classList.add("subscription-disabled-control");
+  });
+}
+
+window.SmartHotelSubscription = {
+  isActive: hasActiveSubscription,
+  openPayment: openSubscriptionPayment,
+  markPaid: markSubscriptionPaid,
+  getStatus: loadSubscriptionStatus,
+  priceDisplay: SUBSCRIPTION_PRICE_DISPLAY,
+  realPriceDisplay: SUBSCRIPTION_REAL_PRICE_DISPLAY
+};
+
 function showApp() {
   publicView.classList.add("is-hidden");
   loginView.classList.add("is-hidden");
   appView.classList.remove("is-hidden");
   renderProfile();
+  updateSubscriptionUi();
 }
 
 function showLogin() {
-  publicView.classList.add("is-hidden");
-  appView.classList.add("is-hidden");
-  loginView.classList.remove("is-hidden");
-  loginError.textContent = "";
+  window.location.href = authPageUrl("login");
+}
+
+function showSignup() {
+  window.location.href = authPageUrl("signup");
 }
 
 function showPublic() {
@@ -589,7 +753,8 @@ function setAvatarImage(element, photo) {
 
 function renderProfile() {
   const profile = loadProfile();
-  profileEmail.textContent = DEMO_EMAIL;
+  const owner = loadOwnerAccount();
+  profileEmail.textContent = localStorage.getItem(SESSION_EMAIL_KEY) || owner.email || DEMO_EMAIL;
   setAvatarImage(profileAvatar, profile.photo);
   setAvatarImage(profilePanelAvatar, profile.photo);
 }
@@ -695,6 +860,7 @@ async function setSection(id) {
     history.replaceState(null, "", `#${nextId}`);
   }
   await loadService(nextId);
+  enforceSubscriptionGate(nextId);
 }
 
 function selectOptionHtml(value, label, selectedValue) {
@@ -851,14 +1017,14 @@ function submitCareerApplication(form) {
   selectedCareerJobId = "";
 }
 
-loginForm.addEventListener("submit", async (event) => {
+loginForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const formData = new FormData(loginForm);
   const email = String(formData.get("email")).trim();
   const password = String(formData.get("password"));
 
-  if (email === DEMO_EMAIL && password === DEMO_PASSWORD) {
-    localStorage.setItem(SESSION_KEY, "active");
+  if (isPrototypeLogin(email, password)) {
+    activatePrototypeSession(email);
     loginError.textContent = "";
     loginForm.reset();
     showApp();
@@ -871,6 +1037,7 @@ loginForm.addEventListener("submit", async (event) => {
 
 logoutButton.addEventListener("click", () => {
   localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(SESSION_EMAIL_KEY);
   history.replaceState(null, "", "#home");
   showPublic();
 });
@@ -913,10 +1080,20 @@ navItems.forEach((item) => {
 });
 
 document.querySelectorAll("[data-open-login], #openLoginButton").forEach((button) => {
-  button.addEventListener("click", showLogin);
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    showLogin();
+  });
 });
 
-backToSiteButton.addEventListener("click", () => {
+document.querySelectorAll("[data-open-signup]").forEach((button) => {
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    showSignup();
+  });
+});
+
+backToSiteButton?.addEventListener("click", () => {
   history.replaceState(null, "", "#home");
   showPublic();
 });

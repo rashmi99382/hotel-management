@@ -1,0 +1,22 @@
+{
+  "name": "smart-hotel-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Smart Hotel Platform static app with AWS-ready API scaffold.",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node server/server.js",
+    "check": "node -c server/server.js && node -c server/db.js && node -c server/s3.js && node -c server/auth.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.600.0",
+    "@aws-sdk/s3-request-presigner": "^3.600.0",
+    "aws-jwt-verify": "^4.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "helmet": "^7.1.0",
+    "morgan": "^1.10.0",
+    "pg": "^8.12.0"
+  }
+}
