@@ -3,7 +3,7 @@ const DEMO_PASSWORD = "Rashmi@123";
 const SESSION_KEY = "smartHotelPrototypeSession";
 const SESSION_EMAIL_KEY = "smartHotelPrototypeSessionEmail";
 const OWNER_ACCOUNT_KEY = "smartHotelPrototypeOwnerAccount";
-const ASSET_VERSION = "pdf-eight-work-v1";
+const ASSET_VERSION = "admin-heading-cleanup-v1";
 const PROFILE_KEY = "smartHotelAdminProfile";
 const QR_MENU_STORAGE_KEY = "smartQrMenuSystemState";
 const SUBSCRIPTION_KEY = "smartHotelSubscriptionStatus";
@@ -19,6 +19,7 @@ const appView = document.querySelector("#appView");
 const loginForm = document.querySelector("#loginForm");
 const loginError = document.querySelector("#loginError");
 const pageTitle = document.querySelector("#pageTitle");
+const appHeader = document.querySelector(".app-header");
 const profileButton = document.querySelector("#profileButton");
 const profilePanel = document.querySelector("#profilePanel");
 const profilePanelClose = document.querySelector("#profilePanelClose");
@@ -507,16 +508,19 @@ const services = {
   },
   inventory: {
     title: "Inventory & Cost Management",
+    hidePageTitle: true,
     folder: "inventory",
     file: "inventory"
   },
   attendance: {
     title: "Smart Attendance",
+    hidePageTitle: true,
     folder: "attendance",
     file: "attendance"
   },
   jobs: {
     title: "Inbuilt Job Platform",
+    hidePageTitle: true,
     folder: "jobs",
     file: "jobs"
   },
@@ -870,10 +874,20 @@ async function loadService(id) {
 
 async function setSection(id) {
   const nextId = services[id] ? id : "overview";
+  const service = services[nextId];
   navItems.forEach((item) => {
     item.classList.toggle("is-active", item.dataset.sectionLink === nextId);
   });
-  pageTitle.textContent = services[nextId].title;
+      const hidePageTitle = Boolean(service.hidePageTitle);
+      if (pageTitle) {
+        pageTitle.textContent = hidePageTitle ? "" : service.title;
+        pageTitle.classList.toggle("is-hidden", hidePageTitle);
+        pageTitle.setAttribute("aria-hidden", hidePageTitle ? "true" : "false");
+      }
+      if (appHeader) {
+        appHeader.classList.toggle("is-hidden", hidePageTitle);
+        appHeader.setAttribute("aria-hidden", hidePageTitle ? "true" : "false");
+      }
   if (!appView.classList.contains("is-hidden")) {
     history.replaceState(null, "", `#${nextId}`);
   }
